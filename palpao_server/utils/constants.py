@@ -1,5 +1,4 @@
 
-__version__ = "$Id: constants.py 30 2018-01-27 10:18:23Z lbusoni $"
 
 
 class Constants:

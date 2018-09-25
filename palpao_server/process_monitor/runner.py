@@ -13,9 +13,6 @@ from palpao_server.utils.constants import Constants
 from palpao_server.utils.process_startup_helper import ProcessStartUpHelper
 
 
-__version__ = "$Id: runner.py 27 2018-01-27 08:48:07Z lbusoni $"
-
-
 
 class Runner(BaseRunner):
 

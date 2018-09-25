@@ -1,6 +1,5 @@
 import os
 
-__version__= "$Id: process_startup_helper.py 26 2018-01-26 19:06:25Z lbusoni $"
 
 
 class ProcessStartUpHelper(object):

@@ -3,7 +3,6 @@ from palpao_server.utils.constants import Constants
 from plico.utils.starter_script_creator_base import StarterScriptCreatorBase
 
 
-__version__= "$Id: starter_script_creator.py 26 2018-01-26 19:06:25Z lbusoni $"
 
 
 class StarterScriptCreator(StarterScriptCreatorBase):
