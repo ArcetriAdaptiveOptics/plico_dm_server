@@ -1,0 +1,3 @@
+recursive-include test *
+recursive-include palpao_server/conf *
+recursive-include palpao_server/calib *
