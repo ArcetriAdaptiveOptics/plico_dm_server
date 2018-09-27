@@ -1,26 +1,61 @@
 import abc
-import numpy
-from plico.utils.decorator import returns
+from plico.utils.decorator import returns, returnsNone
 from six import with_metaclass
 
-
-__version__= "$Id: abstract_deformable_mirror.py 27 2018-01-27 08:48:07Z lbusoni $"
 
 
 class AbstractDeformableMirror(with_metaclass(abc.ABCMeta, object)):
 
-    @abc.abstractmethod
-    def setZonalCommand(self):
-        assert False
-
-
-    @abc.abstractmethod
-    @returns(numpy.ndarray)
-    def getZonalCommand(self):
-        assert False
 
 
     @abc.abstractmethod
     @returns(str)
     def serialNumber(self):
         assert False
+
+
+    @abc.abstractmethod
+    def numberOfActuators(self):
+        """ Number of actuators of the deformable mirror
+
+        Return the number of actuators of the deformable mirror.
+        number of degrees of freedom.
+
+        Return:
+            numberOfActuators (int): the number of actuators of the deformable mirror.
+        """
+        assert False
+
+
+    @abc.abstractmethod
+    @returnsNone
+    def setZonalCommand(self, command):
+        """ Set deformable mirror command
+
+        Set the DM shape
+
+        Parameters:
+            command (:obj:ndarray): an array containing the required value for the actuators
+                The size of the array must be equal to the number of actuators of the DM
+
+
+        """
+        assert False
+
+
+    @abc.abstractmethod
+    @returnsNone
+    def getZonalCommand(self):
+        """ Get Deformable Mirror command
+
+        return the current DM command
+
+        Return:
+            shape (:obj:ndarray): an array containing the measured value for the actuators
+                The size of the array must be equal to the number of actuators of the DM
+
+        The value are measured if the DM has an internal metrology on position
+        The shape sequence is taken into account.
+        """
+        assert False
+

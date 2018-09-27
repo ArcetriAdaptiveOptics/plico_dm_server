@@ -1,6 +1,6 @@
 import threading
 from plico.utils.logger import Logger
-from plico.utils.decorator import logEnterAndExit, override, synchronized
+from plico.utils.decorator import override, synchronized
 from plico.utils.timekeeper import TimeKeeper
 from plico.utils.stepable import Stepable
 from plico.utils.snapshotable import Snapshotable
@@ -10,7 +10,6 @@ from palpao.client.abstract_deformable_mirror_client import SnapshotEntry
 from plico.utils.serverinfoable import ServerInfoable
 
 
-__version__= "$Id: deformable_mirror_controller.py 27 2018-01-27 08:48:07Z lbusoni $"
 
 
 
@@ -40,6 +39,7 @@ class DeformableMirrorController(Stepable, Snapshotable, Hackerable,
         self._timekeep = TimeKeeper()
         self._mirrorStatus= None
         self._mutexStatus= threading.RLock()
+        self._modalCommand= None
 
 
     @override
@@ -71,16 +71,16 @@ class DeformableMirrorController(Stepable, Snapshotable, Hackerable,
         return self._isTerminated
 
 
-    def setZonalCommand(self, actuatorCommands):
-        self._mirror.setZonalCommand(actuatorCommands)
-        self._zonalCommand= actuatorCommands
+    def setShape(self, modalAmplitudes):
+        self._mirror.setZonalCommand(modalAmplitudes)
+        self._modalCommand= modalAmplitudes.copy()
         self._commandCounter+= 1
         with self._mutexStatus:
             self._mirrorStatus= None
 
 
-    def getZonalCommand(self):
-        return self._zonalCommand
+    def getShape(self):
+        return self._mirror.getZonalCommand()
 
 
     def getSnapshot(self, prefix):

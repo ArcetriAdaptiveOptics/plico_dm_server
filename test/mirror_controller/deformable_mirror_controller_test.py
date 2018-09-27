@@ -7,7 +7,6 @@ from palpao.client.abstract_deformable_mirror_client import SnapshotEntry
 from palpao_server.mirror_controller.deformable_mirror_controller \
     import DeformableMirrorController
 
-__version__ = "$Id: deformable_mirror_controller_test.py 26 2018-01-26 19:06:25Z lbusoni $"
 
 
 class MyReplySocket():
@@ -49,10 +48,10 @@ class DeformableMirrorControllerTest(unittest.TestCase):
         self.assertEqual(self._dmSerialNumber, snapshot[serialNumberKey])
 
 
-    def testSetGetZonalCommands(self):
+    def testSetGetModalCommands(self):
         actuatorCommands= np.arange(12) * 3.14
-        self._ctrl.setZonalCommand(actuatorCommands)
-        zonalCommands= self._ctrl.getZonalCommand()
+        self._ctrl.setShape(actuatorCommands)
+        zonalCommands= self._ctrl.getShape()
         self.assertTrue(np.allclose(actuatorCommands, zonalCommands))
 
 

@@ -6,11 +6,9 @@ from palpao_server.mirror_controller.abstract_deformable_mirror import \
     AbstractDeformableMirror
 
 
-__version__ = "$Id: simulated_deformable_mirror.py 27 2018-01-27 08:48:07Z lbusoni $"
-
-
 class SimulatedDeformableMirror(AbstractDeformableMirror):
 
+    NUMBER_OF_ACTUATORS= 10
 
     def __init__(self, serialNumber):
         self._serialNumber= serialNumber
@@ -31,3 +29,7 @@ class SimulatedDeformableMirror(AbstractDeformableMirror):
     @override
     def serialNumber(self):
         return self._serialNumber
+
+
+    def numberOfActuators(self):
+        return self.NUMBER_OF_ACTUATORS

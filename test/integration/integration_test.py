@@ -130,14 +130,14 @@ class IntegrationTest(unittest.TestCase):
             self.rpc, Sockets(ports2, self.rpc))
 
 
-    def _testApplyZonalCommand(self):
-        actuatorPosition= np.arange(10)
-        self.deformableMirrorClient1.applyZonalCommand(actuatorPosition)
+    def _testSetShape(self):
+        mirrorModalAmplitude= np.arange(10)
+        self.deformableMirrorClient1.setShape(mirrorModalAmplitude)
         Poller(3).check(ExecutionProbe(
             lambda: self.assertTrue(
                 np.allclose(
-                    actuatorPosition,
-                    self.deformableMirrorClient1.getZonalCommand()))))
+                    mirrorModalAmplitude,
+                    self.deformableMirrorClient1.getShape()))))
 
 
     def _checkBackdoor(self):
@@ -156,7 +156,7 @@ class IntegrationTest(unittest.TestCase):
     def _testGetStatus(self):
         status= self.deformableMirrorClient1.getStatus()
         cmdCounter= status.commandCounter()
-        self.deformableMirrorClient1.applyZonalCommand(np.arange(4))
+        self.deformableMirrorClient1.setShape(np.arange(4))
         Poller(3).check(ExecutionProbe(
             lambda: self.assertEqual(
                 cmdCounter + 1,
@@ -181,7 +181,7 @@ class IntegrationTest(unittest.TestCase):
         self._createStarterScripts()
         self._startProcesses()
         self._testProcessesActuallyStarted()
-        self._testApplyZonalCommand()
+        self._testSetShape()
         self._testGetStatus()
         self._testGetSnapshot()
         self._testServerInfo()
