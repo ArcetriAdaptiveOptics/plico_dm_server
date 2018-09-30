@@ -31,5 +31,11 @@ class SimulatedDeformableMirror(AbstractDeformableMirror):
         return self._serialNumber
 
 
+    @override
     def numberOfActuators(self):
         return self.NUMBER_OF_ACTUATORS
+
+
+    @override
+    def deinitialize(self):
+        pass

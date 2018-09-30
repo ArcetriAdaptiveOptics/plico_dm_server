@@ -59,3 +59,8 @@ class AbstractDeformableMirror(with_metaclass(abc.ABCMeta, object)):
         """
         assert False
 
+
+    @abc.abstractmethod
+    @returnsNone
+    def deinitialize(self):
+        assert False
