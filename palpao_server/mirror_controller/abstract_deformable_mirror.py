@@ -15,7 +15,7 @@ class AbstractDeformableMirror(with_metaclass(abc.ABCMeta, object)):
 
 
     @abc.abstractmethod
-    def numberOfActuators(self):
+    def getNumberOfActuators(self):
         """ Number of actuators of the deformable mirror
 
         Return the number of actuators of the deformable mirror.

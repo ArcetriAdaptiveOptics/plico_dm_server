@@ -1,4 +1,5 @@
 import threading
+import numpy as np
 from plico.utils.logger import Logger
 from plico.utils.decorator import override, synchronized
 from plico.utils.timekeeper import TimeKeeper
@@ -8,7 +9,6 @@ from plico.utils.hackerable import Hackerable
 from palpao.types.deformable_mirror_status import DeformableMirrorStatus
 from palpao.client.abstract_deformable_mirror_client import SnapshotEntry
 from plico.utils.serverinfoable import ServerInfoable
-
 
 
 
@@ -40,6 +40,8 @@ class DeformableMirrorController(Stepable, Snapshotable, Hackerable,
         self._mirrorStatus= None
         self._mutexStatus= threading.RLock()
         self._modalCommand= None
+        self._modalBasis= None
+#        self._setModalBasis('zonal')
 
 
     @override
@@ -69,6 +71,22 @@ class DeformableMirrorController(Stepable, Snapshotable, Hackerable,
     @override
     def isTerminated(self):
         return self._isTerminated
+
+
+    def _getNumberOfActuators(self):
+        return self._mirror.getNumberOfActuators()
+
+
+    def _getNumberOfModes(self):
+#        self._modalBasis.shape[1]
+        return self._getNumberOfActuators()
+
+
+#    @synchronized("_mutexStatus")
+#    def _setModalBasis(self, modalBasisTag):
+#        if modalBasisTag == 'zonal':
+#            self._modalBasis= np.identity(self._getNumberOfActuators())
+#            self._modalBasisTag= modalBasisTag
 
 
     def setShape(self, modalAmplitudes):
@@ -103,8 +121,11 @@ class DeformableMirrorController(Stepable, Snapshotable, Hackerable,
         if self._mirrorStatus is None:
             self._logger.debug('get MirrorStatus')
             self._mirrorStatus= DeformableMirrorStatus(
+                self._getNumberOfActuators(),
+                self._getNumberOfModes(),
                 self._mirror.getZonalCommand(),
                 self._commandCounter)
+            self._logger.debug(self._mirrorStatus)
         return self._mirrorStatus
 
 

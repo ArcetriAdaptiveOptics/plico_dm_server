@@ -23,6 +23,10 @@ class MyRpcHandler():
         pass
 
 
+    def publishPickable(self, socket, obj):
+        pass
+
+
 class DeformableMirrorControllerTest(unittest.TestCase):
 
     def setUp(self):
@@ -53,6 +57,10 @@ class DeformableMirrorControllerTest(unittest.TestCase):
         self._ctrl.setShape(actuatorCommands)
         zonalCommands= self._ctrl.getShape()
         self.assertTrue(np.allclose(actuatorCommands, zonalCommands))
+
+
+    def testStep(self):
+        self._ctrl.step()
 
 
 if __name__ == "__main__":

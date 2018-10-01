@@ -32,7 +32,7 @@ class SimulatedDeformableMirror(AbstractDeformableMirror):
 
 
     @override
-    def numberOfActuators(self):
+    def getNumberOfActuators(self):
         return self.NUMBER_OF_ACTUATORS
 
 

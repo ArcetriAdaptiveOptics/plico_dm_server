@@ -131,7 +131,9 @@ class IntegrationTest(unittest.TestCase):
 
 
     def _testSetShape(self):
-        mirrorModalAmplitude= np.arange(10)
+        self.deformableMirrorClient1.setShape(np.arange(2))
+        numberOfModes= self.deformableMirrorClient1.getNumberOfModes()
+        mirrorModalAmplitude= np.arange(numberOfModes) * 3.141
         self.deformableMirrorClient1.setShape(mirrorModalAmplitude)
         Poller(3).check(ExecutionProbe(
             lambda: self.assertTrue(
