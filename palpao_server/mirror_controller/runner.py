@@ -12,8 +12,6 @@ from plico.rpc.zmq_ports import ZmqPorts
 from palpao.calibration.calibration_manager import CalibrationManager
 
 
-__version__= "$Id: runner.py 27 2018-01-27 08:48:07Z lbusoni $"
-
 
 class Runner(BaseRunner):
 
@@ -109,7 +107,7 @@ class Runner(BaseRunner):
             self._controller,
             Logger.of("Deformable Mirror Controller control loop"),
             time,
-            0.00001).start()
+            0.001).start()
         self._logger.notice("Terminated")
 
 
