@@ -8,7 +8,7 @@ from palpao_server.mirror_controller.abstract_deformable_mirror import \
 
 class SimulatedDeformableMirror(AbstractDeformableMirror):
 
-    NUMBER_OF_ACTUATORS= 10
+    NUMBER_OF_ACTUATORS= 36
 
     def __init__(self, serialNumber):
         self._serialNumber= serialNumber
@@ -18,6 +18,9 @@ class SimulatedDeformableMirror(AbstractDeformableMirror):
 
     @override
     def setZonalCommand(self, zonalCommand):
+        assert zonalCommand.shape == (self.NUMBER_OF_ACTUATORS,), \
+            "zonal command must be a vector of %d elements" % \
+            self.NUMBER_OF_ACTUATORS
         self._zonalCommand= zonalCommand
 
 

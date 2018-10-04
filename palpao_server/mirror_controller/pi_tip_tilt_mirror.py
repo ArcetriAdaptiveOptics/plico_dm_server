@@ -1,15 +1,10 @@
-#!/usr/bin/env python
-
 from plico.utils.decorator import override
 from plico.utils.logger import Logger
 from palpao_server.mirror_controller.abstract_deformable_mirror import \
-    AbstractInstrument
+    AbstractDeformableMirror
 
 
-__version__ = "$Id: alpao_deformable_mirror.py 27 2018-01-27 08:48:07Z lbusoni $"
-
-
-class PhysikInstrumenteTipTiltMirror(AbstractInstrument):
+class PhysikInstrumenteTipTiltMirror(AbstractDeformableMirror):
 
 
     def __init__(self, serialNumber, tipTiltMirror):
@@ -34,3 +29,12 @@ class PhysikInstrumenteTipTiltMirror(AbstractInstrument):
     def serialNumber(self):
         return self._serialNumber
 
+
+    @override
+    def deinitialize(self):
+        pass
+
+
+    @override
+    def getNumberOfActuators(self):
+        return 2

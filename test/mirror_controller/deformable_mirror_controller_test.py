@@ -53,10 +53,11 @@ class DeformableMirrorControllerTest(unittest.TestCase):
 
 
     def testSetGetModalCommands(self):
-        actuatorCommands= np.arange(12) * 3.14
-        self._ctrl.setShape(actuatorCommands)
-        zonalCommands= self._ctrl.getShape()
-        self.assertTrue(np.allclose(actuatorCommands, zonalCommands))
+        nModes= self._ctrl._getNumberOfModes()
+        shapeCommands= np.arange(nModes) * 3.14
+        self._ctrl.setShape(shapeCommands)
+        actualShape= self._ctrl.getShape()
+        self.assertTrue(np.allclose(shapeCommands, actualShape))
 
 
     def testStep(self):
