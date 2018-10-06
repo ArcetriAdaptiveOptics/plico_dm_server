@@ -92,7 +92,7 @@ setup(name=NAME,
       package_data={
           'palpao_server': ['conf/palpao_server.conf', 'calib/*'],
       },
-      install_requires=["plico>=0.7",
+      install_requires=["plico>=0.15",
                         "palpao>=0.15",
                         "numpy",
                         "scipy",

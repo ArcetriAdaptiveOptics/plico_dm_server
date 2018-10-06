@@ -10,6 +10,7 @@ from palpao_server.mirror_controller.deformable_mirror_controller import \
     DeformableMirrorController
 from plico.rpc.zmq_ports import ZmqPorts
 from palpao.calibration.calibration_manager import CalibrationManager
+from palpao_server.mirror_controller.bmc_deformable_mirror import BmcDeformableMirror
 
 
 
@@ -33,6 +34,8 @@ class Runner(BaseRunner):
             self._createAlpaoDM277Mirror(mirrorDeviceSection)
         elif mirrorModel == 'piTipTilt':
             self._createPITipTiltMirror(mirrorDeviceSection)
+        elif mirrorModel == 'bmc':
+            self._createBmcDeformableMirror(mirrorDeviceSection)
         else:
             raise KeyError('Unsupported mirror model %s' % mirrorModel)
 
@@ -45,6 +48,16 @@ class Runner(BaseRunner):
 
     def _createAlpaoDM277Mirror(self, mirrorDeviceSection):
         assert False, 'Implement me'
+
+
+    def _createBmcDeformableMirror(self, mirrorDeviceSection):
+        serialNumber= self.configuration.getValue(mirrorDeviceSection,
+                                                  'serial_number')
+        self._logger.notice("Creating BMC device SN %s" % serialNumber)
+        import bmc
+        bmcDm= bmc.BmcDm()
+        self._logger.notice("BMC version <%s>" % bmcDm.version_string())
+        self._mirror= BmcDeformableMirror(bmcDm, serialNumber)
 
 
     def _createPITipTiltMirror(self, mirrorDeviceSection):

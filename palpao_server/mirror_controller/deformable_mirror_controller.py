@@ -42,6 +42,7 @@ class DeformableMirrorController(Stepable, Snapshotable, Hackerable,
         self._modalCommand= None
         self._modalBasis= None
 #        self._setModalBasis('zonal')
+        self._logger.notice('Deformable Mirror Controller created')
 
 
     @override
@@ -56,6 +57,18 @@ class DeformableMirrorController(Stepable, Snapshotable, Hackerable,
 
     def _getStepCounter(self):
         return self._stepCounter
+
+
+
+#     def _flattenDm(self, flatFileName):
+#         with open(flatFileName) as f:
+#             data= f.readlines()
+# 
+#         for n in range(self.getNumberOfActuators()):
+#             line= data[n]
+#             data[n]= line.rstrip()
+#         self._flattenCommand= np.double(data)
+#         self._mirror.setZonalCommand(self._flattenCommand)
 
 
     def terminate(self):
