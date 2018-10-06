@@ -4,6 +4,7 @@ import numpy as np
 from palpao_server.mirror_controller.simulated_deformable_mirror import \
     SimulatedDeformableMirror
 from palpao.client.abstract_deformable_mirror_client import SnapshotEntry
+from palpao.calibration.in_memory_calibration_manager import InMemoryCalibrationManager
 from palpao_server.mirror_controller.deformable_mirror_controller \
     import DeformableMirrorController
 
@@ -37,13 +38,25 @@ class DeformableMirrorControllerTest(unittest.TestCase):
         self._rpcHandler= MyRpcHandler()
         self._replySocket= MyReplySocket()
         self._statusSocket= MyPublisherSocket()
+        self._calMgr= InMemoryCalibrationManager()
+        self._createDefaultFlat()
         self._ctrl= DeformableMirrorController(
             self._serverName,
             self._ports,
             self._mirror,
             self._replySocket,
             self._statusSocket,
-            self._rpcHandler)
+            self._rpcHandler,
+            self._calMgr,
+            self._flatDmTag)
+
+
+    def _createDefaultFlat(self):
+        self._flatDmCommand= np.random.rand(
+            self._mirror.getNumberOfActuators())
+        self._flatDmTag='foo_foo_flatters'
+        self._calMgr.saveZonalCommand(self._flatDmTag,
+                                      self._flatDmCommand)
 
 
     def testGetSnapshot(self):
@@ -62,6 +75,24 @@ class DeformableMirrorControllerTest(unittest.TestCase):
 
     def testStep(self):
         self._ctrl.step()
+
+
+    def testSetFlatReferenceAtInit(self):
+        wanted= self._flatDmCommand
+        got= self._mirror.getZonalCommand()
+        self.assertTrue(np.allclose(
+            wanted, got), "%s %s" % (wanted, got))
+        self.assertEqual(self._flatDmTag,
+                         self._ctrl.getFlatTag())
+
+
+    def testCommandsAreSummedToFlatShape(self):
+        command= np.random.rand(self._ctrl._getNumberOfModes())
+        self._ctrl.setShape(command)
+        wanted= self._flatDmCommand + command
+        got= self._mirror.getZonalCommand()
+        self.assertTrue(np.allclose(
+            wanted, got), "%s %s" % (wanted, got))
 
 
 if __name__ == "__main__":

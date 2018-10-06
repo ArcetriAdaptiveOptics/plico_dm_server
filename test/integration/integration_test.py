@@ -21,8 +21,6 @@ from palpao_server.utils.constants import Constants
 from palpao.client.abstract_deformable_mirror_client import SnapshotEntry
 
 
-__version__ = "$Id: integration_test.py 28 2018-01-27 08:54:00Z lbusoni $"
-
 
 class IntegrationTest(unittest.TestCase):
 

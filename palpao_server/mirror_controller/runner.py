@@ -10,7 +10,8 @@ from palpao_server.mirror_controller.deformable_mirror_controller import \
     DeformableMirrorController
 from plico.rpc.zmq_ports import ZmqPorts
 from palpao.calibration.calibration_manager import CalibrationManager
-from palpao_server.mirror_controller.bmc_deformable_mirror import BmcDeformableMirror
+from palpao_server.mirror_controller.bmc_deformable_mirror import \
+    BmcDeformableMirror
 
 
 
@@ -20,6 +21,17 @@ class Runner(BaseRunner):
 
     def __init__(self):
         BaseRunner.__init__(self)
+
+
+    def _tryGetDefaultFlatTag(self):
+        try:
+            mirrorDeviceSection= self.configuration.getValue(
+                self.getConfigurationSection(), 'mirror')
+            return self.configuration.getValue(
+                mirrorDeviceSection, 'default_flat_tag')
+        except KeyError as e:
+            self._logger.warn(str(e))
+            return None
 
 
     def _createDeformableMirrorDevice(self):
@@ -104,13 +116,17 @@ class Runner(BaseRunner):
 
         self._createDeformableMirrorDevice()
 
+        flatFileTag= self._tryGetDefaultFlatTag()
+
         self._controller= DeformableMirrorController(
             self.name,
             self._zmqPorts,
             self._mirror,
             self._replySocket,
             self._statusSocket,
-            self.rpc())
+            self.rpc(),
+            self._calibrationManager,
+            flatFileTag)
 
 
     def _runLoop(self):

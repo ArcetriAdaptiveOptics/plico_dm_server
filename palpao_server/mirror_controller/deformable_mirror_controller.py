@@ -23,11 +23,15 @@ class DeformableMirrorController(Stepable, Snapshotable, Hackerable,
                  deformableMirror,
                  replySocket,
                  statusSocket,
-                 rpcHandler):
+                 rpcHandler,
+                 calibrationManager,
+                 flatZonalCommandTag):
         self._mirror= deformableMirror
         self._replySocket= replySocket
         self._statusSocket= statusSocket
         self._rpcHandler= rpcHandler
+        self._calMgr= calibrationManager
+        self._flatTag= flatZonalCommandTag
         self._logger= Logger.of('DeformableMirrorController')
         Hackerable.__init__(self, self._logger)
         ServerInfoable.__init__(self, servername,
@@ -42,7 +46,13 @@ class DeformableMirrorController(Stepable, Snapshotable, Hackerable,
         self._modalCommand= None
         self._modalBasis= None
 #        self._setModalBasis('zonal')
+        self._initialize()
         self._logger.notice('Deformable Mirror Controller created')
+
+
+    def _initialize(self):
+        self.setFlatCommand(self._flatTag)
+        self.setShape(np.zeros(self._getNumberOfModes()))
 
 
     @override
@@ -58,6 +68,14 @@ class DeformableMirrorController(Stepable, Snapshotable, Hackerable,
     def _getStepCounter(self):
         return self._stepCounter
 
+
+    def setFlatCommand(self, flatTag):
+        self._flatCmd= self._calMgr.loadZonalCommand(flatTag)
+        self._flatTag= flatTag
+
+
+    def getFlatTag(self):
+        return self._flatTag
 
 
 #     def _flattenDm(self, flatFileName):
@@ -101,9 +119,17 @@ class DeformableMirrorController(Stepable, Snapshotable, Hackerable,
 #            self._modalBasis= np.identity(self._getNumberOfActuators())
 #            self._modalBasisTag= modalBasisTag
 
+    def _convertModalToZonal(self, modalCommand):
+        return modalCommand.copy()
+
+
+    def _convertZonalToModal(self, zonalCommand):
+        return zonalCommand.copy()
+
 
     def setShape(self, modalAmplitudes):
-        self._mirror.setZonalCommand(modalAmplitudes)
+        zonalCommand= self._convertModalToZonal(modalAmplitudes)
+        self._mirror.setZonalCommand(zonalCommand + self._flatCmd)
         self._modalCommand= modalAmplitudes.copy()
         self._commandCounter+= 1
         with self._mutexStatus:
@@ -111,7 +137,8 @@ class DeformableMirrorController(Stepable, Snapshotable, Hackerable,
 
 
     def getShape(self):
-        return self._mirror.getZonalCommand()
+        zonalCmd= self._mirror.getZonalCommand() - self._flatCmd
+        return self._convertZonalToModal(zonalCmd)
 
 
     def getSnapshot(self, prefix):
