@@ -78,17 +78,6 @@ class DeformableMirrorController(Stepable, Snapshotable, Hackerable,
         return self._flatTag
 
 
-#     def _flattenDm(self, flatFileName):
-#         with open(flatFileName) as f:
-#             data= f.readlines()
-# 
-#         for n in range(self.getNumberOfActuators()):
-#             line= data[n]
-#             data[n]= line.rstrip()
-#         self._flattenCommand= np.double(data)
-#         self._mirror.setZonalCommand(self._flattenCommand)
-
-
     def terminate(self):
         self._logger.notice("Got request to terminate")
         try:

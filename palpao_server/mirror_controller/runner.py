@@ -12,6 +12,9 @@ from plico.rpc.zmq_ports import ZmqPorts
 from palpao.calibration.calibration_manager import CalibrationManager
 from palpao_server.mirror_controller.bmc_deformable_mirror import \
     BmcDeformableMirror
+from palpao_server.mirror_controller.alpao_deformable_mirror import \
+    AlpaoDeformableMirror
+import sys
 
 
 
@@ -42,8 +45,8 @@ class Runner(BaseRunner):
             self._createSimulatedDeformableMirror(mirrorDeviceSection)
         elif mirrorModel == 'simulatedDM':
             self._createSimulatedDeformableMirror(mirrorDeviceSection)
-        elif mirrorModel == 'alpaoDM277':
-            self._createAlpaoDM277Mirror(mirrorDeviceSection)
+        elif mirrorModel == 'alpaoDM':
+            self._createAlpaoMirror(mirrorDeviceSection)
         elif mirrorModel == 'piTipTilt':
             self._createPITipTiltMirror(mirrorDeviceSection)
         elif mirrorModel == 'bmc':
@@ -58,8 +61,16 @@ class Runner(BaseRunner):
         self._mirror= SimulatedDeformableMirror(dmSerialNumber)
 
 
-    def _createAlpaoDM277Mirror(self, mirrorDeviceSection):
-        assert False, 'Implement me'
+    def _createAlpaoMirror(self, mirrorDeviceSection):
+        serialNumber= self.configuration.getValue(mirrorDeviceSection,
+                                                  'serial_number')
+        self._logger.notice("Creating ALPAO device SN %s" % serialNumber)
+        libFolder= self.configuration.getValue(mirrorDeviceSection,
+                                               'lib_folder')
+        sys.path.append(libFolder)
+        from asdk import DM
+        alpaoDm= DM(serialNumber)
+        self._mirror= AlpaoDeformableMirror(alpaoDm, serialNumber)
 
 
     def _createBmcDeformableMirror(self, mirrorDeviceSection):

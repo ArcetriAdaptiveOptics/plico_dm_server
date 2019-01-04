@@ -6,26 +6,57 @@ from palpao_server.mirror_controller.abstract_deformable_mirror import \
     AbstractDeformableMirror
 
 
-__version__ = "$Id: alpao_deformable_mirror.py 27 2018-01-27 08:48:07Z lbusoni $"
+class AlpaoError(Exception):
+    """Exception raised for ALPAO error.
+
+    Attributes:
+        errorCode -- BMC error code
+        message -- explanation of the error
+    """
+
+    def __init__(self, errorCode, message):
+        self.errorCode = errorCode
+        self.message = message
+
 
 
 class AlpaoDeformableMirror(AbstractDeformableMirror):
 
 
-    def __init__(self):
+    def __init__(self, dm, serialNumber):
+        self._dm= dm
+        self._serialNumber= serialNumber
         self._logger= Logger.of('ALPAO Deformable Mirror')
+        self._dm.Reset()
 
 
     @override
     def setZonalCommand(self, zonalCommand):
-        assert False, 'Implement me'
+        self._dm.Send(zonalCommand)
+        self._lastZonalCommand= zonalCommand
 
 
     @override
     def getZonalCommand(self):
-        assert False, 'Implement me'
+        return self._lastZonalCommand
 
 
     @override
     def serialNumber(self):
-        assert False, 'Implement me'
+        return self._serialNumber
+
+
+    def getVersion(self):
+        return int(self._dm.Get('VersionInfo'))
+
+
+    @override
+    def getNumberOfActuators(self):
+        return int(self._dm.Get('NbOfActuator'))
+
+
+    @override
+    def deinitialize(self):
+        self._dm.Stop()
+        self._dm.Reset()
+
