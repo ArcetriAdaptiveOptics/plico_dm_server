@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from plico.utils.decorator import override
+from plico.utils.decorator import override, cacheResult
 from plico.utils.logger import Logger
 from palpao_server.mirror_controller.abstract_deformable_mirror import \
     AbstractDeformableMirror
@@ -32,6 +32,11 @@ class AlpaoDeformableMirror(AbstractDeformableMirror):
 
     @override
     def setZonalCommand(self, zonalCommand):
+        if len(zonalCommand) != self.getNumberOfActuators():
+            raise AlpaoError(
+                "Wrong size for zonalCommand (size is "
+                "%d instead of %d") % (
+                    len(zonalCommand), self.getNumberOfActuators())
         self._dm.Send(zonalCommand)
         self._lastZonalCommand= zonalCommand
 
@@ -51,6 +56,7 @@ class AlpaoDeformableMirror(AbstractDeformableMirror):
 
 
     @override
+    @cacheResult
     def getNumberOfActuators(self):
         return int(self._dm.Get('NbOfActuator'))
 
