@@ -62,8 +62,8 @@ class Runner(BaseRunner):
 
 
     def _createAlpaoMirror(self, mirrorDeviceSection):
-        serialNumber= self.configuration.getValue(mirrorDeviceSection,
-                                                  'serial_number')
+        serialNumber= str(self.configuration.getValue(mirrorDeviceSection,
+                                                  'serial_number'))
         self._logger.notice("Creating ALPAO device SN %s" % serialNumber)
         libFolder= self.configuration.getValue(mirrorDeviceSection,
                                                'lib_folder')
@@ -71,6 +71,7 @@ class Runner(BaseRunner):
         from asdk import DM
         alpaoDm= DM(serialNumber)
         self._mirror= AlpaoDeformableMirror(alpaoDm, serialNumber)
+        self._logger.notice("ALPAO device SN %s created" % serialNumber)
 
 
     def _createBmcDeformableMirror(self, mirrorDeviceSection):
@@ -129,6 +130,7 @@ class Runner(BaseRunner):
 
         flatFileTag= self._tryGetDefaultFlatTag()
 
+        self._logger.notice("Creating DeformableMirrorController")
         self._controller= DeformableMirrorController(
             self.name,
             self._zmqPorts,
