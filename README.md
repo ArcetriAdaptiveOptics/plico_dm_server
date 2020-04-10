@@ -1,6 +1,6 @@
 # PALPAO server: deformable mirror controller 
 
-[![Build Status][travis]][travislink]  [![Coverage Status][coveralls]][coverallslink]  [![PyPI version][pypiversion]][pypiversionlink]
+[![Build Status][travis]][travislink]  [![Coverage Status][coveralls]][coverallslink] [![Documentation Status](https://readthedocs.org/projects/palpao_server/badge/?version=latest)](https://palpao_server.readthedocs.io/en/latest/?badge=latest) [![PyPI version][pypiversion]][pypiversionlink]
 
 This is part a component of the Plico framework to control Deformable Mirrors (Alpao, MEMS, PI piezo tip-tilt platform)
 
