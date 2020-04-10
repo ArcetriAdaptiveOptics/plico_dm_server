@@ -6,13 +6,13 @@ This is part a component of the Plico framework to control Deformable Mirrors (A
 
 See [palpao][palpao] repository for installation and usage
 
-[plico]: https://github.com/lbusoni/plico
-[palpao]: https://github.com/lbusoni/palpao
+[plico]: https://github.com/ArcetriAdaptiveOptics/plico
+[palpao]: https://github.com/ArcetriAdaptiveOptics/palpao
 [allied]: https://www.alliedvision.com
-[travis]: https://travis-ci.com/lbusoni/palpao_server.svg?branch=master "go to travis"
-[travislink]: https://travis-ci.com/lbusoni/palpao_server
-[coveralls]: https://coveralls.io/repos/github/lbusoni/palpao_server/badge.svg?branch=master "go to coveralls"
-[coverallslink]: https://coveralls.io/github/lbusoni/palpao_server
+[travis]: https://travis-ci.com/ArcetriAdaptiveOptics/palpao_server.svg?branch=master "go to travis"
+[travislink]: https://travis-ci.com/ArcetriAdaptiveOptics/palpao_server
+[coveralls]: https://coveralls.io/repos/github/ArcetriAdaptiveOptics/palpao_server/badge.svg?branch=master "go to coveralls"
+[coverallslink]: https://coveralls.io/github/ArcetriAdaptiveOptics/palpao_server
 [pypiversion]: https://badge.fury.io/py/palpao-server.svg
 [pypiversionlink]: https://badge.fury.io/py/palpao_server
 
