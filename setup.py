@@ -7,7 +7,7 @@ from setuptools import setup, Command
 
 NAME = 'palpao_server'
 DESCRIPTION = 'ALPAO, Boston MEMS, Physik Instrument Deformable mirrors interface'
-URL = 'https://github.com/lbusoni/palpao_server'
+URL = 'https://github.com/lbusoni/plico_dm_server'
 EMAIL = 'lorenzo.busoni@inaf.it'
 AUTHOR = 'Lorenzo Busoni'
 LICENSE = 'MIT'
@@ -45,7 +45,8 @@ class UploadCommand(Command):
             pass
 
         self.status('Building Source and Wheel (universal) distribution...')
-        os.system('{0} setup.py sdist bdist_wheel --universal'.format(sys.executable))
+        os.system(
+            '{0} setup.py sdist bdist_wheel --universal'.format(sys.executable))
 
         self.status('Uploading the package to PyPI via Twine...')
         os.system('twine upload dist/*')
@@ -96,7 +97,6 @@ setup(name=NAME,
                         "scipy",
                         "psutil",
                         "six",
-                        "pyfits",
                         "pi_gcs",
                         ],
       include_package_data=True,
