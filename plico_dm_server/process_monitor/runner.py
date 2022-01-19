@@ -9,8 +9,8 @@ import psutil
 from plico.utils.base_runner import BaseRunner
 from plico.utils.decorator import override
 from plico.utils.logger import Logger
-from palpao_server.utils.constants import Constants
-from palpao_server.utils.process_startup_helper import ProcessStartUpHelper
+from plico_dm_server.utils.constants import Constants
+from plico_dm_server.utils.process_startup_helper import ProcessStartUpHelper
 
 
 
@@ -78,14 +78,14 @@ class Runner(BaseRunner):
 
 
     def _setup(self):
-        self._logger= Logger.of("Palpao process monitor runner")
+        self._logger= Logger.of("plico_dm process monitor runner")
         self._setSignalIntHandler()
         self._logger.notice("Creating process Mirror Controller")
         self._determineInstalledBinaryDir()
         self._mirrorController1= self._spawnMirrorController(
-            Constants.MIRROR_CONTROLLER_1_PROCESS_NAME)
+            Constants.controller_1_PROCESS_NAME)
         self._mirrorController2= self._spawnMirrorController(
-            Constants.MIRROR_CONTROLLER_2_PROCESS_NAME)
+            Constants.controller_2_PROCESS_NAME)
 
 
     def _runLoop(self):

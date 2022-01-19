@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 import unittest
 import numpy as np
-from palpao_server.mirror_controller.simulated_deformable_mirror import \
+from plico_dm_server.controller.simulated_deformable_mirror import \
     SimulatedDeformableMirror
-from palpao.client.abstract_deformable_mirror_client import SnapshotEntry
-from palpao.calibration.in_memory_calibration_manager import InMemoryCalibrationManager
-from palpao_server.mirror_controller.deformable_mirror_controller \
+from plico_dm.client.abstract_deformable_mirror_client import SnapshotEntry
+from plico_dm.calibration.in_memory_calibration_manager import InMemoryCalibrationManager
+from plico_dm_server.controller.deformable_controller \
     import DeformableMirrorController
 
 

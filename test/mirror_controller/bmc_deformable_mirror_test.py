@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 import unittest
 import numpy as np
-from palpao_server.mirror_controller.bmc_deformable_mirror import \
+from plico_dm_server.controller.bmc_deformable_mirror import \
     BmcDeformableMirror, BmcError
-from palpao_server.mirror_controller.fake_bmc_dm import FakeBmcDm
+from plico_dm_server.controller.fake_bmc_dm import FakeBmcDm
 
 
 

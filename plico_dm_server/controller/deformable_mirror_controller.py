@@ -6,8 +6,8 @@ from plico.utils.timekeeper import TimeKeeper
 from plico.utils.stepable import Stepable
 from plico.utils.snapshotable import Snapshotable
 from plico.utils.hackerable import Hackerable
-from palpao.types.deformable_mirror_status import DeformableMirrorStatus
-from palpao.client.abstract_deformable_mirror_client import SnapshotEntry
+from plico_dm.types.deformable_mirror_status import DeformableMirrorStatus
+from plico_dm.client.abstract_deformable_mirror_client import SnapshotEntry
 from plico.utils.serverinfoable import ServerInfoable
 
 

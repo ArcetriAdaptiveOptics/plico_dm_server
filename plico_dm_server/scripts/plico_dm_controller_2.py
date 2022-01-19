@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 import sys
-from palpao_server.mirror_controller.runner import Runner
+from plico_dm_server.controller.runner import Runner
 from plico.utils.config_file_manager import ConfigFileManager
-from palpao_server.utils.constants import Constants
+from plico_dm_server.utils.constants import Constants
 
-__version__ = "$Id: palpao_mirror_controller_2.py 30 2018-01-27 10:18:23Z lbusoni $"
+__version__ = "$Id: plico_dm_controller_2.py 30 2018-01-27 10:18:23Z lbusoni $"
 
 
 

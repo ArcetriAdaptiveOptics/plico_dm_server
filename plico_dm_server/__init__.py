@@ -1,4 +1,4 @@
-from palpao_server.utils.constants import Constants
+from plico_dm_server.utils.constants import Constants
 
 
 def _getDefaultConfigFilePath():

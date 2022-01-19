@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 import sys
-from palpao_server.mirror_controller.runner import Runner
+from plico_dm_server.controller.runner import Runner
 
-__version__ = "$Id: palpao_run_mirror_controller.py 25 2018-01-26 19:00:40Z lbusoni $"
+__version__ = "$Id: plico_dm_run_controller.py 25 2018-01-26 19:00:40Z lbusoni $"
 
 
 

@@ -10,15 +10,15 @@ from test.test_helper import TestHelper, Poller, MessageInFileProbe,\
 from plico.utils.configuration import Configuration
 from plico.rpc.zmq_remote_procedure_call import ZmqRemoteProcedureCall
 from plico.utils.logger import Logger
-from palpao_server.utils.starter_script_creator import StarterScriptCreator
-from palpao_server.utils.process_startup_helper import ProcessStartUpHelper
-from palpao.client.deformable_mirror_client import DeformableMirrorClient
-from palpao_server.mirror_controller.runner import Runner
-from palpao_server.process_monitor.runner import Runner as ProcessMonitorRunner
+from plico_dm_server.utils.starter_script_creator import StarterScriptCreator
+from plico_dm_server.utils.process_startup_helper import ProcessStartUpHelper
+from plico_dm.client.deformable_mirror_client import DeformableMirrorClient
+from plico_dm_server.controller.runner import Runner
+from plico_dm_server.process_monitor.runner import Runner as ProcessMonitorRunner
 from plico.rpc.sockets import Sockets
 from plico.rpc.zmq_ports import ZmqPorts
-from palpao_server.utils.constants import Constants
-from palpao.client.abstract_deformable_mirror_client import SnapshotEntry
+from plico_dm_server.utils.constants import Constants
+from plico_dm.client.abstract_deformable_mirror_client import SnapshotEntry
 
 
 
@@ -27,7 +27,7 @@ class IntegrationTest(unittest.TestCase):
     TEST_DIR= os.path.join(os.path.abspath(os.path.dirname(__file__)),
                            "./tmp/")
     LOG_DIR= os.path.join(TEST_DIR, "log")
-    CONF_FILE= 'test/integration/conffiles/palpao_server.conf'
+    CONF_FILE= 'test/integration/conffiles/plico_dm_server.conf'
     CALIB_FOLDER= 'test/integration/calib'
     CONF_SECTION= Constants.PROCESS_MONITOR_CONFIG_SECTION
     SERVER_LOG_PATH= os.path.join(LOG_DIR, "%s.log" % CONF_SECTION)

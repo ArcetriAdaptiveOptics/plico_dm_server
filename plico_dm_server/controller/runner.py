@@ -4,15 +4,15 @@ from plico.utils.base_runner import BaseRunner
 from plico.utils.logger import Logger
 from plico.utils.decorator import override
 from plico.utils.control_loop import FaultTolerantControlLoop
-from palpao_server.mirror_controller.simulated_deformable_mirror import \
+from plico_dm_server.controller.simulated_deformable_mirror import \
     SimulatedDeformableMirror
-from palpao_server.mirror_controller.deformable_mirror_controller import \
+from plico_dm_server.controller.deformable_controller import \
     DeformableMirrorController
 from plico.rpc.zmq_ports import ZmqPorts
-from palpao.calibration.calibration_manager import CalibrationManager
-from palpao_server.mirror_controller.bmc_deformable_mirror import \
+from plico_dm.calibration.calibration_manager import CalibrationManager
+from plico_dm_server.controller.bmc_deformable_mirror import \
     BmcDeformableMirror
-from palpao_server.mirror_controller.alpao_deformable_mirror import \
+from plico_dm_server.controller.alpao_deformable_mirror import \
     AlpaoDeformableMirror
 import sys
 
@@ -85,7 +85,7 @@ class Runner(BaseRunner):
 
 
     def _createPITipTiltMirror(self, mirrorDeviceSection):
-        from palpao_server.mirror_controller.pi_tip_tilt_mirror \
+        from plico_dm_server.controller.pi_tip_tilt_mirror \
             import PhysikInstrumenteTipTiltMirror
         from pi_gcs.gcs2 import GeneralCommandSet2
         from pi_gcs.tip_tilt_2_axes import TipTilt2Axis
