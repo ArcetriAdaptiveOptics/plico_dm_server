@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import unittest
 import numpy as np
-from palpao_server.mirror_controller.pi_tip_tilt_mirror import \
+from plico_dm_server.controller.pi_tip_tilt_mirror import \
     PhysikInstrumenteTipTiltMirror
 from pi_gcs.fake_tip_tilt_2_axis import FakeTipTilt2Axis
 

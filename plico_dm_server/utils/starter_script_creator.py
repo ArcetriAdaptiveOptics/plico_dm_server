@@ -1,5 +1,5 @@
 import os
-from palpao_server.utils.constants import Constants
+from plico_dm_server.utils.constants import Constants
 from plico.utils.starter_script_creator_base import StarterScriptCreatorBase
 
 
@@ -12,7 +12,7 @@ class StarterScriptCreator(StarterScriptCreatorBase):
 
 
     def installExecutables(self):
-        from palpao_server.utils.process_startup_helper import \
+        from plico_dm_server.utils.process_startup_helper import \
             ProcessStartUpHelper
         psh= ProcessStartUpHelper()
 
@@ -23,13 +23,13 @@ class StarterScriptCreator(StarterScriptCreatorBase):
         )
         self._createAStarterScript(
             os.path.join(self._binDir,
-                         Constants.MIRROR_CONTROLLER_1_PROCESS_NAME),
+                         Constants.controller_1_PROCESS_NAME),
             psh.deformableMirrorStartUpScriptPath(),
             Constants.DEFORMABLE_MIRROR_1_CONFIG_SECTION
         )
         self._createAStarterScript(
             os.path.join(self._binDir,
-                         Constants.MIRROR_CONTROLLER_2_PROCESS_NAME),
+                         Constants.controller_2_PROCESS_NAME),
             psh.deformableMirrorStartUpScriptPath(),
             Constants.DEFORMABLE_MIRROR_2_CONFIG_SECTION
         )

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import sys
-from palpao_server.process_monitor.runner import Runner
+from plico_dm_server.process_monitor.runner import Runner
 
 
 

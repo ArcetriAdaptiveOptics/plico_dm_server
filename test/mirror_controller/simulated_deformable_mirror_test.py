@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import unittest
-from palpao_server.mirror_controller.simulated_deformable_mirror \
+from plico_dm_server.controller.simulated_deformable_mirror \
     import SimulatedDeformableMirror
 
 

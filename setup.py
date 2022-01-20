@@ -5,7 +5,7 @@ from shutil import rmtree
 
 from setuptools import setup, Command
 
-NAME = 'palpao_server'
+NAME = 'plico_dm_server'
 DESCRIPTION = 'ALPAO, Boston MEMS, Physik Instrument Deformable mirrors interface'
 URL = 'https://github.com/lbusoni/plico_dm_server'
 EMAIL = 'lorenzo.busoni@inaf.it'
@@ -72,26 +72,26 @@ setup(name=NAME,
       author=AUTHOR,
       license=LICENSE,
       keywords=KEYWORDS,
-      packages=['palpao_server',
-                'palpao_server.mirror_controller',
-                'palpao_server.process_monitor',
-                'palpao_server.scripts',
-                'palpao_server.utils',
+      packages=['plico_dm_server',
+                'plico_dm_server.controller',
+                'plico_dm_server.process_monitor',
+                'plico_dm_server.scripts',
+                'plico_dm_server.utils',
                 ],
       entry_points={
           'console_scripts': [
-              'palpao_mirror_controller_1=palpao_server.scripts.palpao_mirror_controller_1:main',
-              'palpao_mirror_controller_2=palpao_server.scripts.palpao_mirror_controller_2:main',
-              'palpao_kill_all=palpao_server.scripts.palpao_kill_processes:main',
-              'palpao_start=palpao_server.scripts.palpao_process_monitor:main',
-              'palpao_stop=palpao_server.scripts.palpao_stop:main',
+              'plico_dm_controller_1=plico_dm_server.scripts.plico_dm_controller_1:main',
+              'plico_dm_controller_2=plico_dm_server.scripts.plico_dm_controller_2:main',
+              'plico_dm_kill_all=plico_dm_server.scripts.plico_dm_kill_processes:main',
+              'plico_dm_start=plico_dm_server.scripts.plico_dm_process_monitor:main',
+              'plico_dm_stop=plico_dm_server.scripts.plico_dm_stop:main',
           ],
       },
       package_data={
-          'palpao_server': ['conf/palpao_server.conf', 'calib/*'],
+          'plico_dm_server': ['conf/plico_dm_server.conf', 'calib/*'],
       },
       install_requires=["plico>=0.20",
-                        "palpao>=0.17",
+                        "plico_dm>=0.18",
                         "numpy",
                         "scipy",
                         "psutil",

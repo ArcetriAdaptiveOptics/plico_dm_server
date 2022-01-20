@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 import unittest
 import numpy as np
-from palpao_server.mirror_controller.alpao_deformable_mirror import \
+from plico_dm_server.controller.alpao_deformable_mirror import \
     AlpaoDeformableMirror
-from palpao_server.mirror_controller.fake_alpao_dm import FakeAlpaoDm
+from plico_dm_server.controller.fake_alpao_dm import FakeAlpaoDm
 
 
 class BmcDeformableMirrorTest(unittest.TestCase):

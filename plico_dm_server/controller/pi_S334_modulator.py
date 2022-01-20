@@ -2,7 +2,7 @@ import numpy as np
 from plico.utils.logger import Logger
 from plico.utils.decorator import override
 import scipy.signal.signaltools
-from palpao_server.mirror_controller.abstract_modulator import \
+from plico_dm_server.controller.abstract_modulator import \
     AbstractModulator
 
 __version__= "$Id: pi_S334_modulator.py 278 2017-06-12 06:06:05Z pygo $"

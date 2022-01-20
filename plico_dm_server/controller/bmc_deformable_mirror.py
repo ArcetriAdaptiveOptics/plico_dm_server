@@ -1,7 +1,7 @@
 import numpy as np
 from plico.utils.decorator import override
 from plico.utils.logger import Logger
-from palpao_server.mirror_controller.abstract_deformable_mirror \
+from plico_dm_server.controller.abstract_deformable_mirror \
     import AbstractDeformableMirror
 
 
