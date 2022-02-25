@@ -7,7 +7,7 @@ from setuptools import setup, Command
 
 NAME = 'plico_dm_server'
 DESCRIPTION = 'ALPAO, Boston MEMS, Physik Instrument Deformable mirrors interface'
-URL = 'https://github.com/lbusoni/plico_dm_server'
+URL = 'https://github.com/ArcetriAdaptiveOptics/plico_dm_server'
 EMAIL = 'lorenzo.busoni@inaf.it'
 AUTHOR = 'Lorenzo Busoni'
 LICENSE = 'MIT'
@@ -63,7 +63,6 @@ setup(name=NAME,
       version=about['__version__'],
       classifiers=['Development Status :: 4 - Beta',
                    'Operating System :: POSIX :: Linux',
-                   'Programming Language :: Python :: 2.7',
                    'Programming Language :: Python :: 3',
                    ],
       long_description=open('README.md').read(),
@@ -91,7 +90,7 @@ setup(name=NAME,
           'plico_dm_server': ['conf/plico_dm_server.conf', 'calib/*'],
       },
       install_requires=["plico>=0.20",
-                        "plico_dm>=0.18",
+                        "plico_dm>=1.0.0",
                         "numpy",
                         "scipy",
                         "psutil",
