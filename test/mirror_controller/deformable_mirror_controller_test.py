@@ -87,6 +87,23 @@ class DeformableMirrorControllerTest(unittest.TestCase):
         self.assertTrue(np.allclose(
             wanted, got), "%s %s" % (wanted, got))
 
+    def testGetReferenceShape(self):
+        ref_shape = self._ctrl.get_reference_shape()
+        np.testing.assert_allclose(ref_shape, self._flatDmCommand)
+
+    def testSaveCurrentShapeAsReference(self):
+        nModes = self._ctrl._getNumberOfModes()
+        shapeCommands = np.arange(nModes) * 2
+
+        current_reference = self._ctrl.get_reference_shape()
+        self._ctrl.setShape(shapeCommands)
+        self._ctrl.save_current_shape_as_reference('foofoo')
+        self._ctrl.load_reference('foofoo')
+
+        np.testing.assert_allclose(
+            shapeCommands + current_reference,
+            self._ctrl.get_reference_shape())
+
 
 if __name__ == "__main__":
     unittest.main()

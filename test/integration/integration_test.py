@@ -119,14 +119,25 @@ class IntegrationTest(unittest.TestCase):
             self.rpc, Sockets(ports2, self.rpc))
 
     def _testSetShape(self):
-        numberOfModes = self.deformableMirrorClient1.getNumberOfModes()
+        numberOfModes = self.deformableMirrorClient1.get_number_of_modes()
         mirrorModalAmplitude = np.arange(numberOfModes) * 3.141
-        self.deformableMirrorClient1.setShape(mirrorModalAmplitude)
+        self.deformableMirrorClient1.set_shape(mirrorModalAmplitude)
         Poller(3).check(ExecutionProbe(
             lambda: self.assertTrue(
                 np.allclose(
                     mirrorModalAmplitude,
-                    self.deformableMirrorClient1.getShape()))))
+                    self.deformableMirrorClient1.get_shape()))))
+
+    def _testSaveAndLoadReference(self):
+        numberOfModes = self.deformableMirrorClient1.get_number_of_modes()
+        mirrorShape = np.arange(numberOfModes) * 3.141
+        self.deformableMirrorClient1.set_shape(mirrorShape)
+        current_reference = self.deformableMirrorClient1.get_reference_shape()
+        self.deformableMirrorClient1.save_current_shape_as_reference('foogoo')
+        self.deformableMirrorClient1.load_reference('foogoo')
+        np.testing.assert_allclose(
+            current_reference + mirrorShape,
+            self.deformableMirrorClient1.get_reference_shape())
 
     def _checkBackdoor(self):
         self.deformableMirrorClient1.execute(
@@ -141,17 +152,17 @@ class IntegrationTest(unittest.TestCase):
             self.deformableMirrorClient1.eval("self._foobar"))
 
     def _testGetStatus(self):
-        status = self.deformableMirrorClient1.getStatus()
-        cmdCounter = status.commandCounter()
-        self.deformableMirrorClient1.setShape(
-            self.deformableMirrorClient1.getShape() * 2.0)
+        status = self.deformableMirrorClient1.get_status()
+        cmdCounter = status.command_counter
+        self.deformableMirrorClient1.set_shape(
+            self.deformableMirrorClient1.get_shape() * 2.0)
         Poller(3).check(ExecutionProbe(
             lambda: self.assertEqual(
                 cmdCounter + 1,
-                self.deformableMirrorClient1.getStatus().commandCounter())))
+                self.deformableMirrorClient1.get_status().command_counter)))
 
     def _testGetSnapshot(self):
-        snapshot = self.deformableMirrorClient1.getSnapshot('aa')
+        snapshot = self.deformableMirrorClient1.get_snapshot('aa')
         snKey = 'aa.%s' % SnapshotEntry.SERIAL_NUMBER
         self.assertTrue(snKey in snapshot.keys())
 
@@ -167,6 +178,7 @@ class IntegrationTest(unittest.TestCase):
         self._startProcesses()
         self._testProcessesActuallyStarted()
         self._testSetShape()
+        self._testSaveAndLoadReference()
         self._testGetStatus()
         self._testGetSnapshot()
         self._testServerInfo()
