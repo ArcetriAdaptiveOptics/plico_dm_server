@@ -15,6 +15,7 @@ from plico_dm_server.controller.alpao_deformable_mirror import \
     AlpaoDeformableMirror
 from plico_dm_server.controller.deformable_mirror_controller import \
     DeformableMirrorController
+from plico_dm_server.controller.meadowlark_slm import MeadowlarkSlm
 
 
 class Runner(BaseRunner):
@@ -48,6 +49,8 @@ class Runner(BaseRunner):
             self._createPITipTiltMirror(mirrorDeviceSection)
         elif mirrorModel == 'bmc':
             self._createBmcDeformableMirror(mirrorDeviceSection)
+        elif mirrorModel == 'meadowlarkSLM':
+            self._createMeadowlarkSlm(mirrorDeviceSection)
         else:
             raise KeyError('Unsupported mirror model %s' % mirrorModel)
 
@@ -76,6 +79,15 @@ class Runner(BaseRunner):
         bmcDm = bmc.BmcDm()
         self._logger.notice("BMC version <%s>" % bmcDm.version_string())
         self._mirror = BmcDeformableMirror(bmcDm, serialNumber)
+
+    def _createMeadowlarkSlm(self, mirrorDeviceSection):
+        # serialNumber = self.configuration.getValue(mirrorDeviceSection,
+        #                                           'serial_number')
+        #self._logger.notice("Creating BMC device SN %s" % serialNumber)
+        #import bmc
+        #bmcDm = bmc.BmcDm()
+        #self._logger.notice("BMC version <%s>" % bmcDm.version_string())
+        self._mirror = MeadowlarkSlm()
 
     def _createPITipTiltMirror(self, mirrorDeviceSection):
         from plico_dm_server.controller.pi_tip_tilt_mirror \
