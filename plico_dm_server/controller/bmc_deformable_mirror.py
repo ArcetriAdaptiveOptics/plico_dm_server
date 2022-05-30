@@ -25,6 +25,7 @@ class BmcDeformableMirror(AbstractDeformableMirror):
     def __init__(self, bmcDm, bmcSerialNumber):
         self._dm = bmcDm
         self._serialNumber = bmcSerialNumber
+        self._mcl = None
         self._logger = Logger.of('BMC Deformable Mirror')
         self._logger.notice("opening device <%s>" % self._serialNumber)
         self._openDm(self._serialNumber)
@@ -54,7 +55,8 @@ class BmcDeformableMirror(AbstractDeformableMirror):
 
     @override
     def setZonalCommand(self, zonalCommand):
-        self._raiseBmcError(self._dm.send_data(zonalCommand))
+        self._voltageCommand = self._mcl.p2c(zonalCommand)
+        self._raiseBmcError(self._dm.send_data(self._voltageCommand))
 
     @override
     def getZonalCommand(self):
