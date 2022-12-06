@@ -15,7 +15,8 @@ from plico_dm_server.controller.alpao_deformable_mirror import \
     AlpaoDeformableMirror
 from plico_dm_server.controller.deformable_mirror_controller import \
     DeformableMirrorController
-from plico_dm_server.controller.meadowlark_slm import MeadowlarkSlm
+from plico_dm_server.controller.meadowlark_slm_1920 import MeadowlarkSlm1920,\
+    initialize_meadowlark_sdk
 
 
 class Runner(BaseRunner):
@@ -83,11 +84,14 @@ class Runner(BaseRunner):
     def _createMeadowlarkSlm(self, mirrorDeviceSection):
         # serialNumber = self.configuration.getValue(mirrorDeviceSection,
         #                                           'serial_number')
-        #self._logger.notice("Creating BMC device SN %s" % serialNumber)
+        self._logger.notice("Creating  Meadowlark SLM 1920 device")
         #import bmc
         #bmcDm = bmc.BmcDm()
         #self._logger.notice("BMC version <%s>" % bmcDm.version_string())
-        self._mirror = MeadowlarkSlm()
+        lut_filename = "C:\\Users\\labot\\Desktop\\SLM\\slm6208_at635_PCIe.LUT"
+        
+        slm_lib, image_lib = initialize_meadowlark_sdk()
+        self._mirror = MeadowlarkSlm1920(slm_lib, image_lib, lut_filename)
 
     def _createPITipTiltMirror(self, mirrorDeviceSection):
         from plico_dm_server.controller.pi_tip_tilt_mirror \
