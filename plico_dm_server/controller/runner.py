@@ -87,11 +87,12 @@ class Runner(BaseRunner):
         self._logger.notice("Creating  Meadowlark SLM 1920 device")
         #import bmc
         #bmcDm = bmc.BmcDm()
-        #self._logger.notice("BMC version <%s>" % bmcDm.version_string())
+        #self._logger.notice("BMC version <%s>" % bwefcDm.version_string())
         lut_filename = "C:\\Users\\labot\\Desktop\\SLM\\slm6208_at635_PCIe.LUT"
         wfc_filename = "C:\\Users\\labot\\Desktop\\SLM\\slm6208_at635_WFC.bmp"
+        wl_calibration = 635e-9 #meters
         slm_lib, image_lib = initialize_meadowlark_sdk()
-        self._mirror = MeadowlarkSlm1920(slm_lib, image_lib, lut_filename, wfc_filename)
+        self._mirror = MeadowlarkSlm1920(slm_lib, image_lib, lut_filename, wfc_filename, wl_calibration)
 
     def _createPITipTiltMirror(self, mirrorDeviceSection):
         from plico_dm_server.controller.pi_tip_tilt_mirror \

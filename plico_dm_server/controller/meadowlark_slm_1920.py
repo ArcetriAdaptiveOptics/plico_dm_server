@@ -2,7 +2,7 @@ from plico_dm_server.controller.abstract_deformable_mirror import \
     AbstractDeformableMirror
 from plico.utils.decorator import override
 import os
-from ctypes import cdll, CDLL, c_uint, c_double, c_bool, c_float, byref, c_ubyte, POINTER, c_long
+from ctypes import cdll, CDLL, c_uint, c_double, c_bool, c_float, byref, c_ubyte, POINTER, c_ulong, c_char_p
 from plico.utils.logger import Logger
 import numpy as np
 from numpy import dtype
@@ -64,7 +64,8 @@ def initialize_meadowlark_sdk():
             "1 SLM controller expected. Abort" % num_boards_found.value)
     
     slm_lib.Read_SLM_temperature.restype = c_double
-    #slm_lib.Read_Serial_Number.restype = c_long
+    slm_lib.Read_Serial_Number.restype = c_ulong
+    slm_lib.Get_last_error_message.restype = c_char_p
      
     return slm_lib, image_lib
     
@@ -72,11 +73,12 @@ def initialize_meadowlark_sdk():
 
 class MeadowlarkSlm1920(AbstractDeformableMirror):
 
-    def __init__(self, slm_lib, image_lib, lut_filename, wfc_filename):
+    def __init__(self, slm_lib, image_lib, lut_filename, wfc_filename, wl_calibration):
         self._slm_lib = slm_lib
         self._image_lib = image_lib
         self._lut_filename = lut_filename
         self._wfc_filename = wfc_filename
+        self._wl_calibration = wl_calibration #in meters
         self._logger= Logger.of('Meadowlark SLM 1920')
         self._logger.notice("Creating instance of MeadowlarkSlm1920")
         
@@ -150,8 +152,8 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
         image_zero = np.zeros([self._width.value*self._height.value*self._bytes.value], np.uint8, 'C');
         self._write_image(image_zero)
         
-    def _load_calibration_scale(self):
-        self._gray_scale, self._voltage_scale = np.loadtxt(self._lut_filename, unpack=True)
+    # def _load_calibration_scale(self):
+    #     self._gray_scale, self._voltage_scale = np.loadtxt(self._lut_filename, unpack=True)
 
     def _write_image(self, image_np):
         retVal = self._slm_lib.Write_image(
@@ -173,74 +175,120 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
                 raise ("ImageWriteComplete failed, trigger never received?")
                 self._slm_lib.Delete_SDK()
                 
-    def WriteBmpImage(self, bmp_array_image , add_correction = True):
+    def _write_image_from_wavefront(self, wavefront, add_correction = True):
         '''
-        Writes a Bitmap image on SLM
-        bmp_array_image is an one dimensional numpy array with np.uint8 entries
-        If add_correction is True, wavefront correction (wfc) is added to the input image 
-        otherwise wfc = np.zeros
-        returns a one dimensional numpy array with np.uint8 entries, as the sum of the input and wfc images
+        Writes a Bitmap image on SLM, from a wavefront map that is converted into
+        a modulo 256 array
+        
+        Parameters
+        ----------
+        wavefront (numpy array 1D or 2D):
+            if one dimensional, the store method must be Row-major order
+            for instance wavefront = np.reshape(2Darray,(Dim,) 'C')
+        
+        add_correction (bool):
+            if True, wavefront correction (wfc) is applied to the image.
+            Otherwise, is a null vector.
+        Returns
+        -------
+        image : (numpy array 1D)  
+            returns a one dimensional numpy array with np.uint8 entries. 
+            Is the sum of the i and wfc images
         '''
         if add_correction is True:
             wfc = self._wfc
         else:
             wfc = np.zeros(self.getNumberOfActuators(), dtype = np.uint8)
         
+        bmp_array_image = self._convert2_modulo256(wavefront, norm=None)
+        
+        bmp_array_image = np.reshape(bmp_array_image, (self._height.value * self._width.value,), 'C')
+        
         image = bmp_array_image + wfc
         self._write_image(image)
+        
         return image
     
-    def Convert2Modulo256(self, array, norm = 635e-9):
+    def _convert2_modulo256(self, array, norm = None):
+        '''
+        Converts the input array into a modulo 256 numpy array  
+         
+        Parameters
+        ----------
+        
+        array: (numpy array 1D o 2D)
+        
+        norm (scalar in meters):
+         if None, is set to the calibration wavelength, the one from
+         the LUT calibration file, for instance 635 e-9m 
+         
+         Returns
+         -------
+         data: returns a modulo 256 numpy array
+              
+        '''
+        if norm is None:
+            norm  = self._wl_calibration
+        
         data  = array*255/norm
         data = np.round(data)
         return data.astype(np.uint8)
     
-    def Volt2Gray(self, cmd_vector):
-        # TODO: check if the outputs on the calibration lut file are actually voltages
-        '''
-        This function converts the input voltage(?) array and returns gray scaled array
-        through the LUT file calibration.
-        '''
-        assert len(cmd_vector)==self.getNumberOfActuators()
-        gray_vector = np.zeros(self.getNumberOfActuators())
-        # TODO avoid for loop, it takes too much time for 10e7 elements
-        for idx, volt in enumerate(cmd_vector):
-            gray_index = np.where(np.logical_or(self._voltage_scale==volt, np.isclose(self._voltage_scale,volt,atol=0.5)))[0][0]
-            gray_vector[idx] = self._gray_scale[gray_index]
-            
-        return np.array(gray_vector,dtype=np.uint8)
+    # def Volt2Gray(self, cmd_vector):
+    #     # TODO: check if the outputs on the calibration lut file are actually voltages
+    #     '''
+    #     This function converts the input voltage(?) array and returns gray scaled array
+    #     through the LUT file calibration.
+    #     '''
+    #     assert len(cmd_vector)==self.getNumberOfActuators()
+    #     gray_vector = np.zeros(self.getNumberOfActuators())
+    #     # TODO avoid for loop, it takes too much time for 10e7 elements
+    #     for idx, volt in enumerate(cmd_vector):
+    #         gray_index = np.where(np.logical_or(self._voltage_scale==volt, np.isclose(self._voltage_scale,volt,atol=0.5)))[0][0]
+    #         gray_vector[idx] = self._gray_scale[gray_index]
+    #
+    #     return np.array(gray_vector,dtype=np.uint8)
         
-        
-        
-    
     @override
     def setZonalCommand(self, zonalCommand, add_correction = True):
         '''
-        
+        Sets zonal commands on SLM.
+         
         Parameters
         ----------
         
-        zonalCommand: (numpy array, 2D)
-            wavefront to be applied to the SLM in units of nm
+        zonalCommand: (numpy array, 1D)
+            wavefront to be applied to the SLM in units of meters
             the zonalCommand is summed to the reference wavefront specified 
-            in the config file before being applied by the SLM  
+            in the config file before being applied by the SLM
+              
+        add_correction (bool):
+            if True, wavefront correction (wfc) is applied to the image.
+            Otherwise, is a null vector.
         '''
         assert len(zonalCommand)==self.getNumberOfActuators()
-        self._zonal_command = np.array(zonalCommand, dtype=np.uint8)
-        self._applied_command = self.WriteBmpImage(self._zonal_command, add_correction)
+        self._zonal_command = zonalCommand
+        self._applied_command = self._write_image_from_wavefront(self._zonal_command, add_correction)
         
 
     @override
     def getZonalCommand(self):
-        return self._applied_command # self._zonal_command?
+        return self._zonal_command
 
     @override
-    def serialNumber(self):
-        return (self._slm_lib.Read_Serial_Number(self._board_number))
+    def getSerialNumber(self):
+        return c_ulong(self._slm_lib.Read_Serial_Number(self._board_number)).value
 
     @override
     def getNumberOfActuators(self):
         return self._height.value * self._width.value
+    @override 
+    def getHeightInPixels(self):
+        return self._height.value
+    
+    @override 
+    def getWidthInPixels(self):
+        return self._width.value
     
     @override
     def getHeightInMillimeters(self):
@@ -251,7 +299,7 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
         return self._width_in_mm
     
     @override 
-    def getPixelHeigthInMicroometers(self):
+    def getPixelHeigthInMicrometers(self):
         return self._height_in_mm/self._height.value*1e3
     
     @override 
@@ -269,6 +317,10 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
     @override
     def getSerialNumber(self):
         return self._slm_lib.Read_Serial_Number(self._board_number)
+    @override 
+    def getLastErrorMessage(self):
+        return self._slm_lib.Get_last_error_message()
+    
     @override
     def deinitialize(self):
         self._logger.notice('Deleting SLM SDK')
