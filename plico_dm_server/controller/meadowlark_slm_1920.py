@@ -2,10 +2,12 @@ from plico_dm_server.controller.abstract_deformable_mirror import \
     AbstractDeformableMirror
 from plico.utils.decorator import override
 import os
-from ctypes import cdll, CDLL, c_uint, c_bool, c_float, byref, c_ubyte, POINTER
+from ctypes import cdll, CDLL, c_uint, c_double, c_bool, c_float, byref, c_ubyte, POINTER, c_long
 from plico.utils.logger import Logger
 import numpy as np
-
+from numpy import dtype
+from PIL import Image
+ 
 
 class MeadowlarkError(Exception):
     """Exception raised for Meadowlark Optics SDK error.
@@ -60,17 +62,21 @@ def initialize_meadowlark_sdk():
             "Blink SDK successfully constructed. "
             "Found  %s SLM controllers. "
             "1 SLM controller expected. Abort" % num_boards_found.value)
-        
+    
+    slm_lib.Read_SLM_temperature.restype = c_double
+    #slm_lib.Read_Serial_Number.restype = c_long
+     
     return slm_lib, image_lib
     
 
 
 class MeadowlarkSlm1920(AbstractDeformableMirror):
 
-    def __init__(self, slm_lib, image_lib, lut_filename):
+    def __init__(self, slm_lib, image_lib, lut_filename, wfc_filename):
         self._slm_lib = slm_lib
         self._image_lib = image_lib
         self._lut_filename = lut_filename
+        self._wfc_filename = wfc_filename
         self._logger= Logger.of('Meadowlark SLM 1920')
         self._logger.notice("Creating instance of MeadowlarkSlm1920")
         
@@ -90,8 +96,10 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
         self._OutputPulseImageRefresh = c_uint(0) #only supported on 1920x1152, FW rev 1.8. 
         
         self._read_parameters_and_write_zero_image()
-
-
+        
+     
+    
+    
     def _read_parameters_and_write_zero_image(self):
         self._logger.notice("Reading SLM height")
         self._height = c_uint(self._slm_lib.Get_image_height(self._board_number))
@@ -109,7 +117,17 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
             self._slm_lib.Delete_SDK()
             raise MeadowlarkError(
                 "Width is %d. Only 1920 model are supported" % self._width)
-  
+        # if self._height.value != 1152:
+        #     self._slm_lib.Delete_SDK()
+        #     raise MeadowlarkError(
+        #         "Height is %d. Only 1920x1152 models are supported"%self._height)
+        # if self._depth.value !=8:
+        #     self._slm_lib.Delete_SDK()
+        #     raise MeadowlarkError(
+        #         "Bit depth is %d. Only 1920x1152 models are supported"%self._depth)
+        self._pixel_pitch_in_um = 9.2
+        self._height_in_mm = 10.7
+        self._width_in_mm = 17.6
         
         #***you should replace *bit_linear.LUT with your custom LUT file***
         #but for now open a generic LUT that linearly maps input graylevels to output voltages
@@ -118,11 +136,22 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
         self._slm_lib.Load_LUT_file(self._board_number,
                                     str.encode(self._lut_filename));
         self._logger.notice('SLM LUT loaded %s' % self._lut_filename)
+        
+        # loading WaveFront Correction file 
+        self._logger.notice("Loading WFC file %s" % self._wfc_filename)
+        im = Image.open(self._wfc_filename)
+        self._logger.notice('WFC file loaded %s' % self._lut_filename)
+        wfc = np.array(im, dtype = np.uint8)
+        self._wfc = np.reshape(wfc,(self.getNumberOfActuators(),))
+        
 
         # Create one vector to hold values for the SLM image and fill the wavefront correction with a blank
         self._logger.notice("Write image zeros")
         image_zero = np.zeros([self._width.value*self._height.value*self._bytes.value], np.uint8, 'C');
         self._write_image(image_zero)
+        
+    def _load_calibration_scale(self):
+        self._gray_scale, self._voltage_scale = np.loadtxt(self._lut_filename, unpack=True)
 
     def _write_image(self, image_np):
         retVal = self._slm_lib.Write_image(
@@ -137,24 +166,109 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
         if(retVal == -1):
             self._slm_lib.Delete_SDK()
             raise MeadowlarkError("Write Image error. DMA Failed.")
-   
-
+        else: 
+        #check the buffer is ready to receive the next image
+            retVal = self._slm_lib.ImageWriteComplete(self._board_number, self._timeout_ms);
+            if(retVal == -1):
+                raise ("ImageWriteComplete failed, trigger never received?")
+                self._slm_lib.Delete_SDK()
+                
+    def WriteBmpImage(self, bmp_array_image , add_correction = True):
+        '''
+        Writes a Bitmap image on SLM
+        bmp_array_image is an one dimensional numpy array with np.uint8 entries
+        If add_correction is True, wavefront correction (wfc) is added to the input image 
+        otherwise wfc = np.zeros
+        returns a one dimensional numpy array with np.uint8 entries, as the sum of the input and wfc images
+        '''
+        if add_correction is True:
+            wfc = self._wfc
+        else:
+            wfc = np.zeros(self.getNumberOfActuators(), dtype = np.uint8)
+        
+        image = bmp_array_image + wfc
+        self._write_image(image)
+        return image
+    
+    def Convert2Modulo256(self, array, norm = 635e-9):
+        data  = array*255/norm
+        data = np.round(data)
+        return data.astype(np.uint8)
+    
+    def Volt2Gray(self, cmd_vector):
+        # TODO: check if the outputs on the calibration lut file are actually voltages
+        '''
+        This function converts the input voltage(?) array and returns gray scaled array
+        through the LUT file calibration.
+        '''
+        assert len(cmd_vector)==self.getNumberOfActuators()
+        gray_vector = np.zeros(self.getNumberOfActuators())
+        # TODO avoid for loop, it takes too much time for 10e7 elements
+        for idx, volt in enumerate(cmd_vector):
+            gray_index = np.where(np.logical_or(self._voltage_scale==volt, np.isclose(self._voltage_scale,volt,atol=0.5)))[0][0]
+            gray_vector[idx] = self._gray_scale[gray_index]
+            
+        return np.array(gray_vector,dtype=np.uint8)
+        
+        
+        
+    
     @override
-    def setZonalCommand(self, zonalCommand):
-        pass
+    def setZonalCommand(self, zonalCommand, add_correction = True):
+        '''
+        
+        Parameters
+        ----------
+        
+        zonalCommand: (numpy array, 2D)
+            wavefront to be applied to the SLM in units of nm
+            the zonalCommand is summed to the reference wavefront specified 
+            in the config file before being applied by the SLM  
+        '''
+        assert len(zonalCommand)==self.getNumberOfActuators()
+        self._zonal_command = np.array(zonalCommand, dtype=np.uint8)
+        self._applied_command = self.WriteBmpImage(self._zonal_command, add_correction)
+        
 
     @override
     def getZonalCommand(self):
-        pass
+        return self._applied_command # self._zonal_command?
 
     @override
     def serialNumber(self):
-        pass
+        return (self._slm_lib.Read_Serial_Number(self._board_number))
 
     @override
     def getNumberOfActuators(self):
         return self._height.value * self._width.value
-
+    
+    @override
+    def getHeightInMillimeters(self):
+        return self._height_in_mm
+    
+    @override
+    def getWidthInMillimeters(self):
+        return self._width_in_mm
+    
+    @override 
+    def getPixelHeigthInMicroometers(self):
+        return self._height_in_mm/self._height.value*1e3
+    
+    @override 
+    def getPixelWidthInMicrometers(self):
+        return self._width_in_mm/self._width.value*1e3
+    
+    @override
+    def getActuatorsPitchInMicrometers(self):
+        return self._pixel_pitch_in_um
+    
+    @override 
+    def getTemperatureInCelsius(self):
+        return self._slm_lib.Read_SLM_temperature(self._board_number)
+    
+    @override
+    def getSerialNumber(self):
+        return self._slm_lib.Read_Serial_Number(self._board_number)
     @override
     def deinitialize(self):
         self._logger.notice('Deleting SLM SDK')
