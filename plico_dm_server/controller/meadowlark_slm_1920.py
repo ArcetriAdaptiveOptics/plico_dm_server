@@ -64,14 +64,21 @@ def initialize_meadowlark_sdk():
             "1 SLM controller expected. Abort" % num_boards_found.value)
     
     slm_lib.Read_SLM_temperature.restype = c_double
-    slm_lib.Read_Serial_Number.restype = c_ulong
+    #slm_lib.Read_Serial_Number.restype = c_ulong
     slm_lib.Get_last_error_message.restype = c_char_p
      
     return slm_lib, image_lib
-    
+  
 
 
 class MeadowlarkSlm1920(AbstractDeformableMirror):
+    '''
+    Class to ...
+    
+    Parameters
+    ----------
+    slm_lib: 
+    '''
 
     def __init__(self, slm_lib, image_lib, lut_filename, wfc_filename, wl_calibration):
         self._slm_lib = slm_lib
@@ -98,9 +105,7 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
         self._OutputPulseImageRefresh = c_uint(0) #only supported on 1920x1152, FW rev 1.8. 
         
         self._read_parameters_and_write_zero_image()
-        
-     
-    
+           
     
     def _read_parameters_and_write_zero_image(self):
         self._logger.notice("Reading SLM height")
@@ -275,9 +280,9 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
     def getZonalCommand(self):
         return self._zonal_command
 
-    @override
-    def getSerialNumber(self):
-        return c_ulong(self._slm_lib.Read_Serial_Number(self._board_number)).value
+    # @override
+    # def getSerialNumber(self):
+    #     return c_ulong(self._slm_lib.Read_Serial_Number(self._board_number)).value
 
     @override
     def getNumberOfActuators(self):
@@ -315,7 +320,7 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
         return self._slm_lib.Read_SLM_temperature(self._board_number)
     
     @override
-    def getSerialNumber(self):
+    def serialNumber(self):
         return self._slm_lib.Read_Serial_Number(self._board_number)
     @override 
     def getLastErrorMessage(self):
