@@ -22,13 +22,17 @@ class MeadowlarkError(Exception):
         self.errorCode = errorCode
 
 
-def initialize_meadowlark_sdk():
+def initialize_meadowlark_sdk(blink_dir_root):
     
-    blink_c_wrapper_fname = "C:\\Program Files\\Meadowlark Optics\\Blink OverDrive Plus\\SDK\\Blink_C_wrapper"
-    image_gen_fname = "C:\\Program Files\\Meadowlark Optics\\Blink OverDrive Plus\\SDK\\ImageGen"
+    #blink_dir_root = "C:\\Program Files\\Meadowlark Optics\\Blink OverDrive Plus"
+    
+    blink_c_wrapper_fname = os.path.join(blink_dir_root, 'SDK', 'Blink_C_wrapper')
+    #"C:\\Program Files\\Meadowlark Optics\\Blink OverDrive Plus\\SDK\\Blink_C_wrapper"
+    image_gen_fname = os.path.join(blink_dir_root, 'SDK', 'ImageGen') 
+    #"C:\\Program Files\\Meadowlark Optics\\Blink OverDrive Plus\\SDK\\ImageGen"
     
     logger = Logger.of('Meadowlark SLM 1920')
-    os.add_dll_directory("C:\\Program Files\\Meadowlark Optics\\Blink OverDrive Plus")
+    os.add_dll_directory(blink_dir_root)
     cdll.LoadLibrary(blink_c_wrapper_fname)
     slm_lib = CDLL("Blink_C_wrapper")
     logger.notice('slm_lib loaded %s' % (blink_c_wrapper_fname))
@@ -64,7 +68,7 @@ def initialize_meadowlark_sdk():
             "1 SLM controller expected. Abort" % num_boards_found.value)
     
     slm_lib.Read_SLM_temperature.restype = c_double
-    #slm_lib.Read_Serial_Number.restype = c_ulong
+    slm_lib.Read_Serial_Number.restype = c_ulong
     slm_lib.Get_last_error_message.restype = c_char_p
      
     return slm_lib, image_lib
@@ -161,6 +165,9 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
     #     self._gray_scale, self._voltage_scale = np.loadtxt(self._lut_filename, unpack=True)
 
     def _write_image(self, image_np):
+        # TODO: rise error if image_np is not uint8 ?
+        if image_np.dtype != dtype('uint8'):
+            raise MeadowlarkError("dtype elements of image_np must be uint8.")
         retVal = self._slm_lib.Write_image(
         self._board_number, 
         image_np.ctypes.data_as(POINTER(c_ubyte)), 
@@ -200,6 +207,8 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
             returns a one dimensional numpy array with np.uint8 entries. 
             Is the sum of the i and wfc images
         '''
+        # TODO: controllare che a parita di input che sia 1D o 2D
+        # dia lo stesso risultato
         if add_correction is True:
             wfc = self._wfc
         else:

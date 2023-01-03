@@ -88,10 +88,19 @@ class Runner(BaseRunner):
         #import bmc
         #bmcDm = bmc.BmcDm()
         #self._logger.notice("BMC version <%s>" % bwefcDm.version_string())
-        lut_filename = "C:\\Users\\labot\\Desktop\\SLM\\slm6208_at635_PCIe.LUT"
-        wfc_filename = "C:\\Users\\labot\\Desktop\\SLM\\slm6208_at635_WFC.bmp"
-        wl_calibration = 635e-9 #meters
-        slm_lib, image_lib = initialize_meadowlark_sdk()
+        self._logger.notice("Reading from configuration file")
+        blink_dir_root = self.configuration.getValue(mirrorDeviceSection, 'blink_dir_root')
+        self._logger.notice("blink_dir_root has been read from configuration file")
+        lut_filename = self.configuration.getValue(mirrorDeviceSection, 'lut_filename')
+        self._logger.notice("lut_filename has been read from configuration file")
+        #lut_filename = "C:\\Users\\labot\\Desktop\\SLM\\slm6208_at635_PCIe.LUT"
+        wfc_filename = self.configuration.getValue(mirrorDeviceSection, 'wfc_filename')
+        self._logger.notice("wfc_filename has been read from configuration file") 
+        #wfc_filename = "C:\\Users\\labot\\Desktop\\SLM\\slm6208_at635_WFC.bmp"
+        wl_calibration = self.configuration.getValue(mirrorDeviceSection, 'wl_calibration')
+        self._logger.notice("wl_calibration has been read from configuration file")
+        #wl_calibration = 635e-9 #meters
+        slm_lib, image_lib = initialize_meadowlark_sdk(blink_dir_root)
         self._mirror = MeadowlarkSlm1920(slm_lib, image_lib, lut_filename, wfc_filename, wl_calibration)
 
     def _createPITipTiltMirror(self, mirrorDeviceSection):
