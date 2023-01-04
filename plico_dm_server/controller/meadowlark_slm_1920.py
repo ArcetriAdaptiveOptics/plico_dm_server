@@ -165,9 +165,10 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
     #     self._gray_scale, self._voltage_scale = np.loadtxt(self._lut_filename, unpack=True)
 
     def _write_image(self, image_np):
-        # TODO: rise error if image_np is not uint8 ?
+        # TODO: rise error if image_np is not uint8 
         if image_np.dtype != dtype('uint8'):
             raise MeadowlarkError("dtype elements of image_np must be uint8.")
+        
         retVal = self._slm_lib.Write_image(
         self._board_number, 
         image_np.ctypes.data_as(POINTER(c_ubyte)), 
@@ -280,7 +281,10 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
             if True, wavefront correction (wfc) is applied to the image.
             Otherwise, is a null vector.
         '''
-        assert len(zonalCommand)==self.getNumberOfActuators()
+        if len(zonalCommand)!=self.getNumberOfActuators():
+            raise MeadowlarkError(
+                "Wrong size for zonalCommand (size is %d instead of %d)" % ( 
+                    len(zonalCommand), self.getNumberOfActuators()))
         self._zonal_command = zonalCommand
         self._applied_command = self._write_image_from_wavefront(self._zonal_command, add_correction)
         
