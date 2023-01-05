@@ -185,7 +185,7 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
         #check the buffer is ready to receive the next image
             retVal = self._slm_lib.ImageWriteComplete(self._board_number, self._timeout_ms);
             if(retVal == -1):
-                raise ("ImageWriteComplete failed, trigger never received?")
+                raise MeadowlarkError("ImageWriteComplete failed, trigger never received?")
                 self._slm_lib.Delete_SDK()
                 
     def _write_image_from_wavefront(self, wavefront, add_correction = True):
@@ -249,21 +249,6 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
         data = np.round(data)
         return data.astype(np.uint8)
     
-    # def Volt2Gray(self, cmd_vector):
-    #     # TODO: check if the outputs on the calibration lut file are actually voltages
-    #     '''
-    #     This function converts the input voltage(?) array and returns gray scaled array
-    #     through the LUT file calibration.
-    #     '''
-    #     assert len(cmd_vector)==self.getNumberOfActuators()
-    #     gray_vector = np.zeros(self.getNumberOfActuators())
-    #     # TODO avoid for loop, it takes too much time for 10e7 elements
-    #     for idx, volt in enumerate(cmd_vector):
-    #         gray_index = np.where(np.logical_or(self._voltage_scale==volt, np.isclose(self._voltage_scale,volt,atol=0.5)))[0][0]
-    #         gray_vector[idx] = self._gray_scale[gray_index]
-    #
-    #     return np.array(gray_vector,dtype=np.uint8)
-        
     @override
     def setZonalCommand(self, zonalCommand, add_correction = True):
         '''
@@ -272,7 +257,7 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
         Parameters
         ----------
         
-        zonalCommand: (numpy array, 1D)
+        zonalCommand: (numpy array, 1D, Row-major order)
             wavefront to be applied to the SLM in units of meters
             the zonalCommand is summed to the reference wavefront specified 
             in the config file before being applied by the SLM

@@ -4,7 +4,8 @@ import numpy as np
 from plico_dm_server.controller.meadowlark_slm_1920 import \
 MeadowlarkSlm1920, MeadowlarkError
 from plico_dm_server.controller.fake_meadowlark_slm_1920 import \
-FakeSlmLib, FakeImageLib
+FakeSlmLib, FakeImageLib, FakeInitializeMeadowlarkSDK
+from numpy import dtype
 
 class MeadowlarkSlm1920Test(unittest.TestCase):
 
@@ -13,16 +14,29 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
     WAVELEGTH_CALIBRATION = 635e-9  # meters
     MEAN_TEMPERATURE = 25.2 # celsius
     NUMBER_OF_ACTUATORS = 2211840
+    
     def setUp(self):
-
-        self._slm_lib = FakeSlmLib()
-        self._image_lib = FakeImageLib()
+        self._sdk = FakeInitializeMeadowlarkSDK()
+        self._slm_lib, self._image_lib = self._sdk.initialize_meadowlark_SDK()
+        self.assertTrue(self._slm_lib.SDK_CONSTRUCTED)
         self._dm = MeadowlarkSlm1920(
             self._slm_lib, self._image_lib, self.LUT_FILE_NAME, self.WFC_FILE_NAME, self.WAVELEGTH_CALIBRATION)
 
     def tearDown(self):
+        self.assertTrue(self._slm_lib.SDK_CONSTRUCTED)
         self._dm.deinitialize()
-
+        
+    def testExceptionWhenSdkIsInizializedTwice(self):
+        self._sdk.SDK_CONSTRUCTED_BEFORE = True
+        self.assertRaises(Exception, self._sdk.initialize_meadowlark_SDK)
+    
+    def testDeleteSdkWhenItsNotCreated(self):
+        self._slm_lib.SDK_CONSTRUCTED = False
+        self.assertRaises(
+            Exception, self._slm_lib.Delete_SDK)
+        #just to allow the tearDown
+        self._slm_lib.SDK_CONSTRUCTED = True
+        
     def testGetNumberOfActuators(self):
         Nact = self._slm_lib.HEIGHT * self._slm_lib.WIDTH
         self.assertEqual(
@@ -76,22 +90,26 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
             array = two_dimensional_arr2, norm = None)
         output_arr2 = np.reshape(output_arr2, (10), order = 'C')
         self.assertTrue(np.allclose(output_arr1, output_arr2))
-         
-        
-        
+            
     def testWriteImageWithWrongFloatInputArray(self):
         input_image  = np.linspace(-1., 1.5, 10)
         self.assertRaises(
             MeadowlarkError, self._dm._write_image, input_image)
     
     def testWriteImageError(self):
-        self._slm_lib.FAIL_TASK = True
+        self._slm_lib.FAIL_TASK_WRITE_IMAGE = True
+        image = np.zeros(2, dtype = np.uint8, order = 'C')
+        self.assertRaises(
+            MeadowlarkError, self._dm._write_image, image_np = image)
+    
+    def testImageWriteCompleteError(self):
+        self._slm_lib.FAIL_TASK_WRITE_IMAGE_COMPLETE = True
         image = np.zeros(2, dtype = np.uint8, order = 'C')
         self.assertRaises(
             MeadowlarkError, self._dm._write_image, image_np = image)
     
     def testWriteImageFromSameWfButWithDifferentDimension(self):
-        #starting from the same wf
+        #starting from the same wavefront
         Nact = self._slm_lib.HEIGHT * self._slm_lib.WIDTH
         one_dimensional_wf1 = np.array(np.arange(Nact), order = 'C')
         two_dimansional_wf2 = np.reshape(one_dimensional_wf1,
@@ -123,10 +141,75 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
         self._dm.setZonalCommand(zonalCommand, add_correction = True)
         actualCommand = self._dm.getZonalCommand()
         self.assertTrue(np.allclose(zonalCommand, actualCommand))
+    
+    def testNeed2CallWriteImageCompleteVariable(self):
+        # testing NEED2CALL_WRITEIMAGECOMPLETE bool variable from FakeSlmLib
+        # calling FakeSlmLib.Write_image and FakeSlmLib.ImageWriteComplete
+        self.assertFalse(self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE)
+        useless_input_parameters = np.zeros(8)
         
+        # writing a single image
+        self._slm_lib.Write_image(*useless_input_parameters)
+        self.assertTrue(self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE)
         
+        self._slm_lib.ImageWriteComplete(*useless_input_parameters[:2])
+        self.assertFalse(self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE)
         
+        # writing 2 image without checking if the buffer is ready
+        # for the next image
+        self._slm_lib.Write_image(*useless_input_parameters)
+        self.assertRaises(
+            Exception, self._slm_lib.Write_image, *useless_input_parameters)
         
-
+        # writing and checking properly multiple images in sequence
+        self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE = False
+        for i in np.arange(5):
+            self._slm_lib.Write_image(*useless_input_parameters)
+            self.assertTrue(self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE)
+            self._slm_lib.ImageWriteComplete(*useless_input_parameters[:2])
+            self.assertFalse(self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE)
+        
+    def testImageWriteAndImageWriteCompleteCorrectSequence(self):
+        self.assertFalse(self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE)
+        image2write_on_slm = np.zeros(self.NUMBER_OF_ACTUATORS, dtype = np.uint8)
+        # writing a single image on slm 
+        # calling _write_image
+        self._dm._write_image(
+            image_np = image2write_on_slm)
+        self.assertFalse(self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE)
+        # calling _ write_image_from_wavefront
+        self._dm._write_image_from_wavefront(
+            wavefront = image2write_on_slm,
+            add_correction = False)
+        self.assertFalse(self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE)
+        # calling setZonalCommand
+        self._dm.setZonalCommand(
+            zonalCommand = image2write_on_slm,
+            add_correction = False)
+        self.assertFalse(self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE)
+        # calling setZonalCommand in sequence
+        for i in np.arange(8):
+            self._dm.setZonalCommand(
+                zonalCommand = image2write_on_slm,
+                add_correction = False)
+            self.assertFalse(self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE)
+    
+    def testImageWriteIsNotReady4TheNextImage(self):
+        self.assertFalse(self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE)
+        self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE = True
+        image2write_on_slm = np.zeros(self.NUMBER_OF_ACTUATORS)
+        self.assertRaises(
+            Exception, self._dm.setZonalCommand, image2write_on_slm, False)
+    
+    def testWriteImageWithWavefrontCorrection(self):
+        wavefrontCorrection = np.ones(self.NUMBER_OF_ACTUATORS, dtype = np.uint8)
+        image2WriteOnSlm = np.zeros(self.NUMBER_OF_ACTUATORS, dtype = np.uint8)
+        self._dm._wfc = wavefrontCorrection
+        outputImage  = self._dm._write_image_from_wavefront(
+            wavefront = image2WriteOnSlm,
+            add_correction = True)
+        expectedImage = image2WriteOnSlm + wavefrontCorrection
+        self.assertTrue(np.allclose(expectedImage, outputImage))
+        
 if __name__ == "__main__":
     unittest.main()
