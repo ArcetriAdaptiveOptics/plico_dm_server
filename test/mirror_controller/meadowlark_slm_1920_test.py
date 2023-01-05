@@ -9,7 +9,7 @@ from numpy import dtype
 
 class MeadowlarkSlm1920Test(unittest.TestCase):
 
-    LUT_FILE_NAME = "C:\\Users\\labot\\Desktop\\SLM\\slm6208_at635_PCIe.LUT"
+    #LUT_FILE_NAME = "C:\\Users\\labot\\Desktop\\SLM\\slm6208_at635_PCIe.LUT"
     WFC_FILE_NAME = "C:\\Users\\labot\\Desktop\\SLM\\slm6208_at635_WFC.bmp"
     WAVELEGTH_CALIBRATION = 635e-9  # meters
     MEAN_TEMPERATURE = 25.2 # celsius
@@ -18,9 +18,12 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
     def setUp(self):
         self._sdk = FakeInitializeMeadowlarkSDK()
         self._slm_lib, self._image_lib = self._sdk.initialize_meadowlark_SDK()
+        #creare file temporaneo wfc qui
+        LUT_FILE_NAME = 'pippo'
         self.assertTrue(self._slm_lib.SDK_CONSTRUCTED)
+        # scrivere file da aprire con Image e metterna su una cartella temporanea
         self._dm = MeadowlarkSlm1920(
-            self._slm_lib, self._image_lib, self.LUT_FILE_NAME, self.WFC_FILE_NAME, self.WAVELEGTH_CALIBRATION)
+            self._slm_lib, self._image_lib, LUT_FILE_NAME, self.WFC_FILE_NAME, self.WAVELEGTH_CALIBRATION)
 
     def tearDown(self):
         self.assertTrue(self._slm_lib.SDK_CONSTRUCTED)

@@ -89,7 +89,8 @@ class Runner(BaseRunner):
         #bmcDm = bmc.BmcDm()
         #self._logger.notice("BMC version <%s>" % bwefcDm.version_string())
         self._logger.notice("Reading from configuration file")
-        blink_dir_root = self.configuration.getValue(mirrorDeviceSection, 'blink_dir_root') 
+        blink_dir_root = str(self.configuration.getValue(mirrorDeviceSection, 'blink_dir_root')) 
+        #blink_dir_root = "C:\\Program Files\\Meadowlark Optics\\Blink OverDrive Plus"
         self._logger.notice("blink_dir_root has been read from configuration file: %s" % blink_dir_root)
         lut_filename = self.configuration.getValue(mirrorDeviceSection, 'lut_filename')
         self._logger.notice("lut_filename has been read from configuration file: %s" % lut_filename)

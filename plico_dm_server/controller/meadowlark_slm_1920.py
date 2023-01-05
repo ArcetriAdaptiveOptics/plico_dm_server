@@ -151,7 +151,7 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
         # loading WaveFront Correction file 
         self._logger.notice("Loading WFC file %s" % self._wfc_filename)
         im = Image.open(self._wfc_filename)
-        self._logger.notice('WFC file loaded %s' % self._lut_filename)
+        self._logger.notice('WFC file loaded %s' % self._wfc_filename)
         wfc = np.array(im, dtype = np.uint8)
         self._wfc = np.reshape(wfc,(self.getNumberOfActuators(),))
         
