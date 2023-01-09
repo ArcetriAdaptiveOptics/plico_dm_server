@@ -1,33 +1,44 @@
 import unittest
 import numpy as np
-
+from PIL import Image
 from plico_dm_server.controller.meadowlark_slm_1920 import \
 MeadowlarkSlm1920, MeadowlarkError
 from plico_dm_server.controller.fake_meadowlark_slm_1920 import \
-FakeSlmLib, FakeImageLib, FakeInitializeMeadowlarkSDK
+FakeInitializeMeadowlarkSDK
 from numpy import dtype
+from tempfile import gettempdir
+import os
 
 class MeadowlarkSlm1920Test(unittest.TestCase):
 
     #LUT_FILE_NAME = "C:\\Users\\labot\\Desktop\\SLM\\slm6208_at635_PCIe.LUT"
-    WFC_FILE_NAME = "C:\\Users\\labot\\Desktop\\SLM\\slm6208_at635_WFC.bmp"
+    WFC_FNAME = "pippo.bmp"
     WAVELEGTH_CALIBRATION = 635e-9  # meters
     MEAN_TEMPERATURE = 25.2 # celsius
     NUMBER_OF_ACTUATORS = 2211840
+    HEIGHT = 1152
+    WIDTH = 1920
     
     def setUp(self):
         self._sdk = FakeInitializeMeadowlarkSDK()
         self._slm_lib, self._image_lib = self._sdk.initialize_meadowlark_SDK()
-        #creare file temporaneo wfc qui
-        LUT_FILE_NAME = 'pippo'
         self.assertTrue(self._slm_lib.SDK_CONSTRUCTED)
-        # scrivere file da aprire con Image e metterna su una cartella temporanea
+        # creating a temporary bmp image in the temporary directory
+        my_temp_dir = gettempdir()
+        im_wfc = Image.fromarray(np.zeros((self.HEIGHT, self.WIDTH), dtype = np.uint8))
+        wfc_file_name = my_temp_dir + '\\' + self.WFC_FNAME
+        im_wfc.save(wfc_file_name) 
+        lut_file_name = 'pippo.lut'
+    
         self._dm = MeadowlarkSlm1920(
-            self._slm_lib, self._image_lib, LUT_FILE_NAME, self.WFC_FILE_NAME, self.WAVELEGTH_CALIBRATION)
+            self._slm_lib, self._image_lib, lut_file_name, wfc_file_name, self.WAVELEGTH_CALIBRATION)
 
     def tearDown(self):
         self.assertTrue(self._slm_lib.SDK_CONSTRUCTED)
         self._dm.deinitialize()
+        my_temp_dir = gettempdir()
+        wfc_file_name = my_temp_dir + '\\' + self.WFC_FNAME
+        os.remove(wfc_file_name)
         
     def testExceptionWhenSdkIsInizializedTwice(self):
         self._sdk.SDK_CONSTRUCTED_BEFORE = True

@@ -155,7 +155,7 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
         wfc = np.array(im, dtype = np.uint8)
         self._wfc = np.reshape(wfc,(self.getNumberOfActuators(),))
         
-
+        # useless operation
         # Create one vector to hold values for the SLM image and fill the wavefront correction with a blank
         self._logger.notice("Write image zeros")
         image_zero = np.zeros([self._width.value*self._height.value*self._bytes.value], np.uint8, 'C');
