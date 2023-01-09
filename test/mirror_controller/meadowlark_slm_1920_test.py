@@ -37,7 +37,7 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
         self.assertTrue(self._slm_lib.SDK_CONSTRUCTED)
         self._dm.deinitialize()
         my_temp_dir = gettempdir()
-        wfc_file_name = my_temp_dir + '\\' + self.WFC_FNAME
+        wfc_file_name = my_temp_dir + '/' + self.WFC_FNAME
         os.remove(wfc_file_name)
         
     def testExceptionWhenSdkIsInizializedTwice(self):
