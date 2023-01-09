@@ -26,7 +26,7 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
         # creating a temporary bmp image in the temporary directory
         my_temp_dir = gettempdir()
         im_wfc = Image.fromarray(np.zeros((self.HEIGHT, self.WIDTH), dtype = np.uint8))
-        wfc_file_name = my_temp_dir + '\\' + self.WFC_FNAME
+        wfc_file_name = my_temp_dir + '/' + self.WFC_FNAME
         im_wfc.save(wfc_file_name) 
         lut_file_name = 'pippo.lut'
     
