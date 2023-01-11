@@ -3,7 +3,7 @@ import sys
 import time
 from plico.utils.base_runner import BaseRunner
 from plico.utils.logger import Logger
-from plico.utils.decorator import override, logFailureAndContinue
+from plico.utils.decorator import override, logFailureAndRaise
 from plico.utils.control_loop import FaultTolerantControlLoop
 from plico_dm_server.controller.simulated_deformable_mirror import \
     SimulatedDeformableMirror
@@ -129,6 +129,7 @@ class Runner(BaseRunner):
         calibrationRootDir = self.configuration.calibrationRootDir()
         self._calibrationManager = CalibrationManager(calibrationRootDir)
 
+    @logFailureAndRaise
     def _setUp(self):
         self._logger = Logger.of("Deformable Mirror Controller runner")
 
@@ -173,13 +174,13 @@ class Runner(BaseRunner):
 
     @override
     def run(self):
-        try:
-            self._setUp()
-        except Exception as e:
-            #traceback.print_exc()
-            self._logger.error(str(e))
-            raise(e)
-        
+        # try:
+        #     self._setUp()
+        # except Exception as e:
+        #     #traceback.print_exc()
+        #     self._logger.error(str(e))
+        #     raise(e)
+        self._setUp()
         self._runLoop()
         return os.EX_OK
 

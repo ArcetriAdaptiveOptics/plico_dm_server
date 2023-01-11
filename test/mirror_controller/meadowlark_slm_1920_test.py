@@ -146,10 +146,31 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
     
     def testSetZonalCommandWithWrongSizeRaises(self):
         wrongNumberOfActuators = self.NUMBER_OF_ACTUATORS - 10
-        command_vector = np.zeros(wrongNumberOfActuators)
+        # 1D input zonalCommand array
+        commandVector1D = np.zeros(wrongNumberOfActuators)
         self.assertRaises(
-            MeadowlarkError, self._dm.setZonalCommand, zonalCommand = command_vector)
-    
+            MeadowlarkError,
+            self._dm.setZonalCommand,
+            zonalCommand = commandVector1D)
+        # 2D input zonalCommand array with both shapes wrong
+        commandVectorWithWrongShapes = np.zeros((2,2))
+        self.assertRaises(
+            MeadowlarkError,
+            self._dm.setZonalCommand,
+            zonalCommand = commandVectorWithWrongShapes)
+        # 2D input zonalCommand array with wrong number of rows
+        commandVectorWithWrongRows = np.zeros((self.HEIGHT, 2))
+        self.assertRaises(
+            MeadowlarkError,
+            self._dm.setZonalCommand,
+            zonalCommand = commandVectorWithWrongRows)
+        # 2D input zonalCommand array with wrong number of columns
+        commandVectorWithWrongCols = np.zeros((2, self.WIDTH))
+        self.assertRaises(
+            MeadowlarkError,
+            self._dm.setZonalCommand,
+            zonalCommand = commandVectorWithWrongCols)
+        
     def testSetAndGetZonalCommand(self):
         zonalCommand = np.arange(self.NUMBER_OF_ACTUATORS)
         self._dm.setZonalCommand(zonalCommand, add_correction = True)

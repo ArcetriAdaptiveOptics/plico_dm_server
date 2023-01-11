@@ -11,6 +11,8 @@ from PIL import Image
 
 class MeadowlarkError(Exception):
     """Exception raised for Meadowlark Optics SDK error.
+    
+    ...
 
     Attributes:
         errorCode -- Meadowlark error code
@@ -23,6 +25,31 @@ class MeadowlarkError(Exception):
 
 
 def initialize_meadowlark_sdk(blink_dir_root):
+    '''
+    A function used to initializes SLM's hardware.
+    
+    The function opens communication and initializes the hardware,
+    through Meadowlark's SDK. Loads DLL 'Blink_C_wrapper' and 'ImageGen' C 
+    libraries, allowing SLM control.
+    
+    ...
+    
+    Parameters
+    ----------
+    blink_dir_root : str
+        Path of 'Blink OverDrive Plus' directory.
+    
+    Returns
+    -------
+    slm_lib : ctype.CDLL
+        Object/handle link to Dynamic Linked Library (DLL) 'Blink_C_wrapper',
+        provided by Meadowlark's SDK. Allows SLM control.
+    image_lib : ctype.CDLL
+        Object/handle link to Dynamic Linked Library (DLL) 'ImageGen',
+        provided by Meadowlark's SDK. Allows to write images on the Spatial
+        Light Modulator. 
+    '''
+    
     
     #blink_dir_root = "C:\\Program Files\\Meadowlark Optics\\Blink OverDrive Plus"
     
@@ -77,11 +104,67 @@ def initialize_meadowlark_sdk(blink_dir_root):
 
 class MeadowlarkSlm1920(AbstractDeformableMirror):
     '''
-    Class to ...
+    A Class used to represent Meadowlark's Spatial Light Modulator (SLM) 1920x1152.
     
-    Parameters
+    Allows communication between Meadowlark's Software Development Kit (SDK)
+    and the hardware.
+    
+    ...
+    
+    Attributes
     ----------
-    slm_lib: 
+    slm_lib : ctypes.CDLL
+        Object/handle link to Dynamic Linked Library (DLL) 'Blink_C_wrapper',
+        provided by Meadowlark's SDK.
+        Allows the control the Spatial Light Modulator.
+    image_lib : ctypes.CDLL
+        Object/handle link to Dynamic Linked Library (DLL) 'ImageGen',
+        provided by Meadowlark's SDK.
+        Allows to write images on the Spatial Light Modulator. Particularly:
+        solids, stripes, checkerboards, random phases, blazed gratings, 
+        sinusoidal, gratings, Bessel beams, holograms, Zernike polynomials,
+        Fresnel lenses and superimposed images.
+    lut_filename: str
+        Path/file name of SLM's LUT calibration file. 
+    wfc_filename : str
+        Path/file name of SLM's Wavefront correction (wfc) file. 
+    wl_calibration : float
+        Wavelength, in meters, used for SLM calibration.
+    
+    Methods
+    -------
+    setZonalCommand(zonalCommand, add_correction = True)
+        Applies actuators' commands in meters and writes the corresponding image
+        on SLM's display.
+    getZonalCommand()
+        Returns the current command applied on SLM. 
+    getNumberOfActuators()
+        Returns the number of actuators, namely the number of SLM's pixels.
+    getHeightInPixels()
+        Returns the SLM's display height in pixels.
+    getWidthInPixels()
+        Returns the SLM's display width in pixels.
+    getHeightInMillimeters()
+        Returns the SLM's display height in millimeters.
+    getWidthInMillimeters()
+        Returns the SLM's display width in millimeters.
+    getPixelHeightInMicrometers()
+        Returns the Pixel's height in micron.
+    getPixelWidthInMicrometers()
+        Returns the Pixel's width in micron.
+    getActuatorsPitchInMicrometers()
+        Returns pixels pitch in micron.
+    getTemperatureInCelsius()
+        Returns SLM's current temperature in Celsius.
+    serialNumber()
+        Returns SLM's serial number.
+    getLastErrorMessage()
+        Prints the last encountered error message.
+    deinitialize()
+        Destroys the handle to the hardware, properly releases memory
+        allocations, and shuts down the hardware. This is the last function
+        that should be called when exiting your software.
+    
     '''
 
     def __init__(self, slm_lib, image_lib, lut_filename, wfc_filename, wl_calibration):
@@ -252,79 +335,273 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
     @override
     def setZonalCommand(self, zonalCommand, add_correction = True):
         '''
-        Sets zonal commands on SLM.
+        Applies actuators' commands in units of meters and writes the
+        corresponding image on SLM's display.
+        
+        The actuators' command is converted into a bit map image, defined as 
+        an unsigned integer 8-bit numpy.ndarray (dtype = np.uint8) with a
+        modulo256 operation, normalized to the calibration wavelength.
+        Finally, writes the outcome bmp vector on SLM display.
+        If add_correction is test to True, the written image on SLM is corrected
+        with the Wavefront Correction file (WFC).
          
         Parameters
         ----------
         
-        zonalCommand: (numpy array, 1D, Row-major order)
-            wavefront to be applied to the SLM in units of meters
-            the zonalCommand is summed to the reference wavefront specified 
-            in the config file before being applied by the SLM
-              
-        add_correction (bool):
-            if True, wavefront correction (wfc) is applied to the image.
-            Otherwise, is a null vector.
+        zonalCommand : numpy.ndarray
+            wavefront to be applied to the SLM, in units of meters.
+                  
+        add_correction: bool
+            if is set to True, the applied image on SLM is the sum of the 
+            corresponding bmp image of the input wavefront and the Wavefront
+            correction File (WFC). Otherwise, the WFC corresponds to null vector:
+            thus no correction is applied. Default value is set to True. 
         '''
-        if len(zonalCommand)!=self.getNumberOfActuators():
-            raise MeadowlarkError(
-                "Wrong size for zonalCommand (size is %d instead of %d)" % ( 
-                    len(zonalCommand), self.getNumberOfActuators()))
+        inputVectorShape = len(zonalCommand.shape)
+        
+        if inputVectorShape == 1:
+            if len(zonalCommand) != self.getNumberOfActuators():
+                raise MeadowlarkError(
+                    "Wrong size for zonalCommand (1D array size is %d instead of %d)" % ( 
+                        len(zonalCommand), self.getNumberOfActuators()))
+        if inputVectorShape == 2:
+            rows, cols = zonalCommand.shape
+            if rows != self._height.value or cols != self._width.value:
+                raise MeadowlarkError(
+                    "Wrong shapes for zonalCommand (2D array shape is (%d, %d) instead of (%d, %d))" % ( 
+                        zonalCommand.shape[0], zonalCommand.shape[-1], self._height.value, self._width.value))
+        
+        if inputVectorShape != 1 and inputVectorShape != 2:
+            raise MeadowlarkError("zonalCommand must be a 1- or 2-D numpy array!")
+        
         self._zonal_command = zonalCommand
         self._applied_command = self._write_image_from_wavefront(self._zonal_command, add_correction)
         
 
     @override
     def getZonalCommand(self):
+        '''
+        Returns the current command applied on SLM.
+        
+        Returns
+        -------
+        zonal_command : numpy.ndarray
+            is a 1- or 2-D numpy array of the applied commands, in units
+            of meters 
+        '''
         return self._zonal_command
-
-    # @override
-    # def getSerialNumber(self):
-    #     return c_ulong(self._slm_lib.Read_Serial_Number(self._board_number)).value
 
     @override
     def getNumberOfActuators(self):
+        '''
+        Returns the number of actuators, namely the number of SLM's pixels.
+        
+        Returns
+        -------
+        Nact : int
+            is the number of SLM pixels
+        '''
         return self._height.value * self._width.value
+    
     @override 
     def getHeightInPixels(self):
+        '''
+        Returns the SLM's display height in pixels.
+        
+        Returns
+        -------
+        height : int
+            is the number of pixels in SLM's display height
+        '''
         return self._height.value
     
     @override 
     def getWidthInPixels(self):
+        '''
+        Returns the SLM's display width in pixels.
+        
+        Returns
+        -------
+        width : int
+            is the number of pixels in SLM's display width
+        '''
         return self._width.value
     
     @override
     def getHeightInMillimeters(self):
+        '''
+        Returns the SLM's display height in millimeters.
+        
+        Returns
+        -------
+        height : float
+            is the SLM's display height in millimeters
+        '''
         return self._height_in_mm
     
     @override
     def getWidthInMillimeters(self):
+        '''
+        Returns the SLM's display width in millimeters.
+        
+        Returns
+        -------
+        width : float
+            is the SLM's display width in millimeters
+        '''
+        
         return self._width_in_mm
     
     @override 
     def getPixelHeigthInMicrometers(self):
+        '''
+        Returns the Pixel's height in micron.
+        
+        Returns
+        -------
+        height : float
+            is the SLM's pixel height in micron
+        '''
         return self._height_in_mm/self._height.value*1e3
     
     @override 
     def getPixelWidthInMicrometers(self):
+        '''
+        Returns the Pixel's width in micron.
+        
+        Returns
+        -------
+        width : float
+            is the SLM's pixel width in micron
+        '''
         return self._width_in_mm/self._width.value*1e3
     
     @override
     def getActuatorsPitchInMicrometers(self):
+        '''
+        Returns pixels pitch in micron.
+        
+        Returns
+        -------
+        pitch : float
+            Is the the center-to-center distance of the pixels, in micron.
+        '''
         return self._pixel_pitch_in_um
     
     @override 
     def getTemperatureInCelsius(self):
+        '''
+        Returns SLM's current temperature in Celsius.
+        
+        Returns
+        -------
+        temperature : float
+            Actual temperature of SLM in Celsius degrees.
+        '''
         return self._slm_lib.Read_SLM_temperature(self._board_number)
     
     @override
     def serialNumber(self):
+        '''
+        Returns SLM's serial number.
+        
+        Returns
+        -------
+        serial_number : int
+            Serial number of Meadowlark SLM.
+        '''
         return self._slm_lib.Read_Serial_Number(self._board_number)
     @override 
     def getLastErrorMessage(self):
+        '''
+        Prints the last encountered error message.
+        
+        Returns
+        -------
+        last_error_message : str
+            string of the last error message
+        '''
         return self._slm_lib.Get_last_error_message()
     
     @override
     def deinitialize(self):
+        '''
+        Destroys the handle to the hardware, properly releases memory
+        allocations, and shuts down the hardware. This is the last function
+        that should be called when exiting your software.
+        '''
         self._logger.notice('Deleting SLM SDK')
         self._slm_lib.Delete_SDK()
+    
+    # ImageGen function for Holograms Not implemented
+    #
+    # def InitializeHologramGenerator(self, iterations = 1):
+    #     '''
+    #     This function opens communication with the GPU, and specifies
+    #     the height and width of the hologram that will be computed such
+    #     that buffers can be allocated. This also allocates the number
+    #     of iterations that will be used in computing the hologram.
+    #     The hologram generator relies on the GPU to complete the required
+    #     computations.
+    #     Once done using the GPU to compute holograms, DestructHologramGenerator
+    #     must be call.
+    #
+    #     Parameters
+    #     ----------
+    #
+    #     iterations: (int)
+    #         number of iterations that will be used in computing the hologram.
+    #         Default is 1.
+    #
+    #     Returns
+    #     -------
+    #     retVal: (int)
+    #         1 or 0 (?)
+    #     '''
+    #     # if width is None:
+    #     #     width = self._width
+    #     # if height is None:
+    #     #     height = self._height
+    #     retVal = self._image_lib.Initialize_HologramGenerator(
+    #         self._width,
+    #         self._height,
+    #         self._depth,
+    #         iterations,
+    #         self._RGB)
+    #     return retVal
+    #
+    # def DestructHologramGenerator(self):
+    #     '''
+    #     This function must be called when done using the GPU to compute holograms.
+    #     '''
+    #     self._image_lib.Destruct_HologramGenerator()
+    #
+    # # def GenerateHologram(self):
+    # #   return 0
+    #
+    # def InitializeGerchbergSaxton(self):
+    #     '''
+    #     This function initializes the Gerchberg Saxton hologram generator.
+    #     This procedure allows to make a hologram to create an image in the
+    #     Fourier Plane.
+    #     Once done using the GPU to compute holograms of images,
+    #     DestructGerchbergSaxton must be call 
+    #     '''
+    #     retVal = self._image_lib.Initialize_GerchbergSaxton()
+    #     return retVal
+    #
+    # def DestructGerchbergSaxton(self):
+    #     '''
+    #     This must be called when done using the GPU to compute
+    #     holograms of images.
+    #     '''
+    #     self._image_lib. Destruct_GerchbergSaxton()
+    #
+    # def ComputeGerchbergSaxtonHologram(self):
+    #     '''
+    #     This function computes a hologram of an image using a Gerchberg Saxton.
+    #     The user should supply an array to be filled with image data by the GPU,
+    #     an array containing the desired image to be created in the Fourier Plane,
+    #     the height and width of the SLM, and the number of iterations used in
+    #     the hologram computation.
+    #     '''
