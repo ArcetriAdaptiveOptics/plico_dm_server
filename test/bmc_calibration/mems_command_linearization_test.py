@@ -2,12 +2,14 @@
 import unittest
 from plico_dm_server.bmc_calibration.mems_command_linearization import MemsCommandLinearization
 import numpy as np
-
+from tempfile import gettempdir
+import os 
+from astropy.io import fits
 
 
 
 class MemsCommandLinearizationTest(unittest.TestCase):
-
+    
     def create_mcl(self):
         self._cmd_vector = np.array([np.linspace(0,1,10),
                         np.linspace(0.1, 1.1, 10)])
@@ -19,7 +21,8 @@ class MemsCommandLinearizationTest(unittest.TestCase):
 
     def setUp(self):
         self.mcl = self.create_mcl()
-
+        
+        
 
     def tearDown(self):
         pass
@@ -71,8 +74,48 @@ class MemsCommandLinearizationTest(unittest.TestCase):
 
     def test_raises_if_vector_is_wrong_size(self):
         self.assertRaises(Exception, self.mcl.p2c, np.zeros(3))
-
-
+    
+    def test_load_from_file(self):
+        
+        act_list2save = np.array([1.,2.])
+        cmd2save = np.array([[1.,2.],[3.,4.]])
+        pos2save = np.array([[5.,6.],[7.,8.]])
+        ref2save ='PIPPO'
+        hdr = fits.Header()
+        hdr['REF_TAG'] = ref2save
+        
+        fname = os.path.join(gettempdir(),'pippo.fits')
+        fits.writeto(fname, act_list2save, hdr, overwrite=True)
+        fits.append(fname, cmd2save)
+        fits.append(fname, pos2save)    
+        
+        loaded_mcl = MemsCommandLinearization.load(fname)
+        
+        self.assertTrue(np.allclose(act_list2save, loaded_mcl.actuators_list()))
+        self.assertTrue(np.allclose(cmd2save, loaded_mcl._cmd_vector))
+        self.assertTrue(np.allclose(pos2save, loaded_mcl._deflection))
+        self.assertTrue(ref2save, loaded_mcl._reference_shape_tag)
+        
+        del loaded_mcl
+        
+        os.remove(fname)
+    
+    def test_save_and_load(self):
+        fname  = os.path.join(gettempdir(), 'pippo2.fits')
+        self.mcl._reference_shape_tag = 'PIPPO'
+        self.mcl.save(fname, overwrite = True)
+        
+        loaded_mcl = MemsCommandLinearization.load(fname)
+        self.assertTrue(np.allclose(self.mcl._actuators_list, loaded_mcl._actuators_list))
+        self.assertTrue(np.allclose(self.mcl._cmd_vector, loaded_mcl._cmd_vector))
+        self.assertTrue(np.allclose(self.mcl._deflection, loaded_mcl._deflection))
+        self.assertTrue(self.mcl._reference_shape_tag, loaded_mcl._reference_shape_tag)
+        
+        del loaded_mcl
+        
+        os.remove(fname)
+        
+        
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
