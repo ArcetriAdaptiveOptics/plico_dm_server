@@ -96,7 +96,7 @@ class MemsCommandLinearizationTest(unittest.TestCase):
         self.assertTrue(np.allclose(pos2save, loaded_mcl._deflection))
         self.assertTrue(ref2save, loaded_mcl._reference_shape_tag)
         
-        del loaded_mcl
+        #del loaded_mcl
         
         os.remove(fname)
     
@@ -111,7 +111,7 @@ class MemsCommandLinearizationTest(unittest.TestCase):
         self.assertTrue(np.allclose(self.mcl._deflection, loaded_mcl._deflection))
         self.assertTrue(self.mcl._reference_shape_tag, loaded_mcl._reference_shape_tag)
         
-        del loaded_mcl
+        #del loaded_mcl
         
         os.remove(fname)
         
