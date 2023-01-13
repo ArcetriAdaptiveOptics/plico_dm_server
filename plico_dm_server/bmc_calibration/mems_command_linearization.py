@@ -303,15 +303,18 @@ class MemsCommandLinearization():
         fname : str
             path/file name of the fits file
         '''
-        header = fits.getheader(fname)
+        #header = fits.getheader(fname, 0)
+        
         # with fits.open(fname) as hduList:
         #     actuators_list = hduList[0].data
         #     cmd_vector = hduList[1].data
         #     deflection = hduList[2].data
-        reference_shape_tag = header['REF_TAG']
+        #reference_shape_tag = header['REF_TAG']
+        reference_shape_tag = fits.getval(fname, 'REF_TAG')
         actuators_list = fits.getdata(fname, 0)
         cmd_vector = fits.getdata(fname, 1)
         deflection = fits.getdata(fname, 2)
+        
         
         return MemsCommandLinearization(
             actuators_list, cmd_vector, deflection, reference_shape_tag)
