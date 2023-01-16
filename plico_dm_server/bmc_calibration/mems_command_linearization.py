@@ -20,13 +20,26 @@ class MemsCommandLinearization():
     Attributes
     ----------
     actuators_list : numpy.ndarray
-        numpy array containing the list of the selected actuators.
+        1D numpy array containing the list of the selected actuators.
+        Actuators labels must be sorted in ascending order.
     cmd_vector : numpy.ndarray
         two-dimensional numpy array, containing the applied tensions to each
-        actuator in the calibration phase.
+        actuator in the calibration phase. Its shape must be equal to
+        (Nact, Nmeas), where Nact is the total number of the DM's actuator
+        and Nmeas is the number o voltage/deflections applied/measured for
+        each actuator.
+        For instance, from the calibration of the MEMS Multi 5.5 DM,
+        with 140 actuators, with 20 measured deflection for each actuators
+        the expected shape of cmd_vector is (140, 20).
     deflection : numpy.ndarray 
         two-dimensional numpy array, containing the measured deflections for each
-        actuator in the calibration phase.
+        actuator in the calibration phase. Its shape must be equal to
+        (Nact, Nmeas), where Nact is the total number of the DM's actuator
+        and Nmeas is the number o voltage/deflections applied/measured for
+        each actuator.
+        For instance, from the calibration of the MEMS Multi 5.5 DM,
+        with 140 actuators, with 20 measured deflection for each actuators
+        the expected shape of deflection is (140, 20)
     reference_shape_tag = None : str
         Tag name of the MEMS deformable mirror reference shape. Default is None
         
@@ -50,6 +63,22 @@ class MemsCommandLinearization():
                  cmd_vector,
                  deflection,
                  reference_shape_tag=None):
+        Nact = len(actuators_list)
+        cmd_vector_shape = cmd_vector.shape
+        deflection_shape = deflection.shape
+        assert np.all(actuators_list[:-1] <= actuators_list[1:]), \
+            "actuators_list must be sorted in ascending order! "
+        assert Nact == cmd_vector_shape[0] and \
+            Nact == deflection_shape[0] and \
+            cmd_vector_shape[1] == deflection_shape[1], \
+            "Conflicting array dimensions! \
+            len(actuator_list) = Nact, got  %d \n \
+            cmd_vector.shape = (Nact, Nmaes), got (%d, %d)\n \
+            deflection.shape = (Nact, Nmaes), got (%d, %d) \n \
+            "% (Nact, Nact, cmd_vector_shape[0], Nact, deflection_shape[0]) 
+        assert np.all(cmd_vector[1,:-1] <= cmd_vector[1,1:]), \
+            "voltage must be sorted in ascending order for a correct interpolation! "
+        
         self._actuators_list = actuators_list
         self._cmd_vector = cmd_vector
         self._deflection = deflection
@@ -121,7 +150,7 @@ class MemsCommandLinearization():
         actuator.  
         Actuators' calibration curves are sampled over 10**4 points
         (voltage-deflection).
-       
+        ***add clipping description***
         
         Parameters
         ----------
@@ -158,6 +187,7 @@ class MemsCommandLinearization():
         return cmd_vector
 
     def c2p(self, cmd_vector):
+        # TODO : add documentation and tension clipping
         assert len(cmd_vector) == self._n_used_actuators, \
             "Command vector should have %d elements, got %d" % (
                 self._n_used_actuators, len(cmd_vector))
@@ -310,11 +340,11 @@ class MemsCommandLinearization():
         #     cmd_vector = hduList[1].data
         #     deflection = hduList[2].data
         #reference_shape_tag = header['REF_TAG']
-        reference_shape_tag = fits.getval(fname, 'REF_TAG')
-        actuators_list = fits.getdata(fname, 0)
-        cmd_vector = fits.getdata(fname, 1)
-        deflection = fits.getdata(fname, 2)
-        
+        with fits.open(fname):
+            reference_shape_tag = fits.getval(fname, 'REF_TAG')
+            actuators_list = fits.getdata(fname, 0)
+            cmd_vector = fits.getdata(fname, 1)
+            deflection = fits.getdata(fname, 2)
         
         return MemsCommandLinearization(
             actuators_list, cmd_vector, deflection, reference_shape_tag)

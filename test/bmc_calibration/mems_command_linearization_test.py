@@ -8,6 +8,7 @@ from astropy.io import fits
 
 
 
+
 class MemsCommandLinearizationTest(unittest.TestCase):
     
     def create_mcl(self):
@@ -21,16 +22,59 @@ class MemsCommandLinearizationTest(unittest.TestCase):
 
     def setUp(self):
         self.mcl = self.create_mcl()
-        
-        
-
+         
     def tearDown(self):
         pass
 
-
+    def test_raises_if_actuators_list_is_bad_sorted(self):
+        self.assertRaises(Exception, MemsCommandLinearization, 
+                         np.array([3,2]),
+                         self.mcl._cmd_vector,
+                         self.mcl._deflection)
+        
+    def test_raises_if_cmd_vector_is_bad_sorted(self):
+        self.assertRaises(Exception, MemsCommandLinearization,
+                          self.mcl._actuators_list,
+                          np.array([[0, 1],[4, 1]]),
+                          self.mcl._deflection)
+        
+    def test_raises_if_mcl_attributes_have_wrong_dimensions(self):
+        # same number of actuators and wrong number of pos/voltage cmds
+        self.assertRaises(Exception, MemsCommandLinearization,
+                          np.array([1, 2]),
+                          np.array([[0, 1, 3], [4, 1, 9]]),
+                          np.array([[1, 2], [3 ,4]]))
+        # same number of pos/voltage cmds and wrong number of actuators
+        self.assertRaises(Exception, MemsCommandLinearization,
+                          np.array([1]),
+                          np.array([[0, 1],[4, 1]]),
+                          np.array([[1, 2], [3, 4]]))
+        # all wrong
+        self.assertRaises(Exception, MemsCommandLinearization,
+                          np.array([1]),
+                          np.array([[0, 1, 3], [4, 1, 3], [1, 1, 1]]),
+                          np.array([[1, 2], [3, 4]]))
+        
+        
     def test_actuator_list(self):
         np.testing.assert_allclose(self.mcl.actuators_list(),
                                    self._actuator_list)
+    
+    def test_volatage_deflection_law(self):
+        self.assertTrue(np.allclose(
+            self.mcl._calibrated_position,
+            self.mcl._calibrated_cmd**2 *1e-6,
+            rtol = 0.001))
+        
+        for act in np.arange(len(self.mcl._actuators_list)):
+            coeff = np.polyfit(self.mcl._calibrated_cmd[act,:],
+                               self.mcl._calibrated_position[act,:],
+                               2)
+            fit_positions = coeff[0]*self.mcl._calibrated_cmd[act,:]**2 + \
+                coeff[1]*self.mcl._calibrated_cmd[act,:] + coeff[2]
+            self.assertTrue(np.allclose(fit_positions,
+                                        self.mcl._calibrated_position[act,:],
+                                        rtol = 1e-3))
 
     def test_p2c_without_interpolation(self):
         wanna_go_in = self._deflection[:, 3]
@@ -96,7 +140,7 @@ class MemsCommandLinearizationTest(unittest.TestCase):
         self.assertTrue(np.allclose(pos2save, loaded_mcl._deflection))
         self.assertTrue(ref2save, loaded_mcl._reference_shape_tag)
         
-        #del loaded_mcl
+        del loaded_mcl
         
         os.remove(fname)
     
@@ -106,12 +150,13 @@ class MemsCommandLinearizationTest(unittest.TestCase):
         self.mcl.save(fname, overwrite = True)
         
         loaded_mcl = MemsCommandLinearization.load(fname)
+        
         self.assertTrue(np.allclose(self.mcl._actuators_list, loaded_mcl._actuators_list))
         self.assertTrue(np.allclose(self.mcl._cmd_vector, loaded_mcl._cmd_vector))
         self.assertTrue(np.allclose(self.mcl._deflection, loaded_mcl._deflection))
         self.assertTrue(self.mcl._reference_shape_tag, loaded_mcl._reference_shape_tag)
         
-        #del loaded_mcl
+        del loaded_mcl
         
         os.remove(fname)
         
