@@ -34,13 +34,13 @@ class FakeSlmLib():
         return self.DEPTH
 
     def Create_SDK(self, bit_depth, num_boards_found, constructed_okay, is_nematic_type, RAM_write_enable, use_GPU, max_transients, num0):
-        
+
         if self.FAIL_TASK_CREATE_SDK is False:
             constructed_okay = -1
             self.SDK_CONSTRUCTED = True
         else:
             constructed_okay = 0
-            
+
         return constructed_okay
 
     def Delete_SDK(self):
@@ -48,30 +48,29 @@ class FakeSlmLib():
             pass
         else:
             raise Exception('Error! SDK is not created!')
-        
 
     def Load_LUT_file(self, board_number, str_lut_fname):
         pass
 
     def Write_image(self, board_number, image_np_data_as_POINTER, height_dot_width_dot_bytes_value, wait_For_Trigger, flip_immediate, OutputPulseImageFlip, OutputPulseImageRefresh, timeout_ms):
         # properly writes on slm
-        if self.FAIL_TASK_WRITE_IMAGE == False:
-            #check if the buffer is ready to write the next image
+        if self.FAIL_TASK_WRITE_IMAGE is False:
+            # check if the buffer is ready to write the next image
             if self.NEED2CALL_WRITEIMAGECOMPLETE is True:
                 raise Exception(
-                    'Check if the buffer is ready to receive the next image!'+\
+                    'Check if the buffer is ready to receive the next image!' +
                     'ImageWriteComplete call needed!')
             retVal = 0
             self.NEED2CALL_WRITEIMAGECOMPLETE = True
         # write image error
         else:
             retVal = -1
-            
-        return retVal 
+
+        return retVal
 
     def ImageWriteComplete(self, board_number, timeout_ms):
         # buffer ready to receive the next image
-        if self.FAIL_TASK_WRITE_IMAGE_COMPLETE == False:
+        if self.FAIL_TASK_WRITE_IMAGE_COMPLETE is False:
             retVal = 0
             self.NEED2CALL_WRITEIMAGECOMPLETE = False
         # fail
@@ -94,19 +93,20 @@ class FakeImageLib():
     def __init__(self):
         pass
 
+
 class FakeInitializeMeadowlarkSDK():
-    
+
     SDK_CONSTRUCTED_BEFORE = False
-    
+
     def __init__(self):
         pass
-    
+
     def initialize_meadowlark_SDK(self):
         fake_slm_lib = FakeSlmLib()
-        fake_image_gen = FakeImageLib() 
-        useless_input_parameters = np.zeros(8, dtype = np.uint8)
+        fake_image_gen = FakeImageLib()
+        useless_input_parameters = np.zeros(8, dtype=np.uint8)
         fake_slm_lib.Create_SDK(*useless_input_parameters)
         if fake_slm_lib.SDK_CONSTRUCTED is False or \
-        self.SDK_CONSTRUCTED_BEFORE is True:
+                self.SDK_CONSTRUCTED_BEFORE is True:
             raise Exception("Blink SDK did not construct successfully")
         return fake_slm_lib, fake_image_gen

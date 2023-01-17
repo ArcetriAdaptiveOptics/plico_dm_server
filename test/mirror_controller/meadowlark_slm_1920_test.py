@@ -5,14 +5,12 @@ from plico_dm_server.controller.meadowlark_slm_1920 import \
     MeadowlarkSlm1920, MeadowlarkError
 from plico_dm_server.controller.fake_meadowlark_slm_1920 import \
     FakeInitializeMeadowlarkSDK
-from numpy import dtype
 from tempfile import gettempdir
 import os
 
 
 class MeadowlarkSlm1920Test(unittest.TestCase):
 
-    #LUT_FILE_NAME = "C:\\Users\\labot\\Desktop\\SLM\\slm6208_at635_PCIe.LUT"
     WFC_FNAME = "pippo.bmp"
     WAVELEGTH_CALIBRATION = 635e-9  # meters
     MEAN_TEMPERATURE = 25.2  # celsius
@@ -28,13 +26,13 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
         my_temp_dir = gettempdir()
         im_wfc = Image.fromarray(
             np.zeros((self.HEIGHT, self.WIDTH), dtype=np.uint8))
-        #wfc_file_name = my_temp_dir + '/' + self.WFC_FNAME
         wfc_file_name = os.path.join(my_temp_dir, self.WFC_FNAME)
         im_wfc.save(wfc_file_name)
         lut_file_name = 'pippo.lut'
 
         self._dm = MeadowlarkSlm1920(
-            self._slm_lib, self._image_lib, lut_file_name, wfc_file_name, self.WAVELEGTH_CALIBRATION)
+            self._slm_lib, self._image_lib, lut_file_name,
+            wfc_file_name, self.WAVELEGTH_CALIBRATION)
 
     def tearDown(self):
         self.assertTrue(self._slm_lib.SDK_CONSTRUCTED)
@@ -203,7 +201,7 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
 
         # writing and checking properly multiple images in sequence
         self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE = False
-        for i in np.arange(5):
+        for _ in np.arange(5):
             self._slm_lib.Write_image(*useless_input_parameters)
             self.assertTrue(self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE)
             self._slm_lib.ImageWriteComplete(*useless_input_parameters[:2])
@@ -228,7 +226,7 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
             add_correction=False)
         self.assertFalse(self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE)
         # calling setZonalCommand in sequence
-        for i in np.arange(8):
+        for _ in np.arange(8):
             self._dm.setZonalCommand(
                 zonalCommand=image2write_on_slm,
                 add_correction=False)

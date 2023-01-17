@@ -85,27 +85,34 @@ class Runner(BaseRunner):
         # serialNumber = self.configuration.getValue(mirrorDeviceSection,
         #                                           'serial_number')
         self._logger.notice("Creating  Meadowlark SLM 1920 device")
-        #import bmc
-        #bmcDm = bmc.BmcDm()
-        #self._logger.notice("BMC version <%s>" % bwefcDm.version_string())
         self._logger.notice("Reading from configuration file")
-        blink_dir_root = str(self.configuration.getValue(mirrorDeviceSection, 'blink_dir_root')) 
-        #blink_dir_root = "C:\\Program Files\\Meadowlark Optics\\Blink OverDrive Plus"
-        self._logger.notice("blink_dir_root has been read from configuration file: %s" % blink_dir_root)
-        lut_filename = self.configuration.getValue(mirrorDeviceSection, 'lut_filename')
-        self._logger.notice("lut_filename has been read from configuration file: %s" % lut_filename)
-        #lut_filename = "C:\\Users\\labot\\Desktop\\SLM\\slm6208_at635_PCIe.LUT"
-        wfc_filename = self.configuration.getValue(mirrorDeviceSection, 'wfc_filename')
-        self._logger.notice("wfc_filename has been read from configuration file: %s" % wfc_filename) 
-        #wfc_filename = "C:\\Users\\labot\\Desktop\\SLM\\slm6208_at635_WFC.bmp"
-        wl_calibration = self.configuration.getValue(mirrorDeviceSection, 'wl_calibration', getfloat= True)
-        self._logger.notice("wl_calibration has been read from configuration file: %g [m]" % wl_calibration)
-        #wl_calibration = 635e-9 #meters
+        blink_dir_root = str(self.configuration.getValue(
+            mirrorDeviceSection, 'blink_dir_root'))
+        self._logger.notice(
+            "blink_dir_root has been read from configuration file: %s" %
+            blink_dir_root)
+        lut_filename = self.configuration.getValue(
+            mirrorDeviceSection, 'lut_filename')
+        self._logger.notice(
+            "lut_filename has been read from configuration file: %s" %
+            lut_filename)
+        wfc_filename = self.configuration.getValue(
+            mirrorDeviceSection, 'wfc_filename')
+        self._logger.notice(
+            "wfc_filename has been read from configuration file: %s" %
+            wfc_filename)
+        wl_calibration = self.configuration.getValue(
+            mirrorDeviceSection, 'wl_calibration', getfloat=True)
+        self._logger.notice(
+            "wl_calibration has been read from configuration file: %g [m]" %
+            wl_calibration)
+        # wl_calibration = 635e-9 #meters
         slm_lib, image_lib = initialize_meadowlark_sdk(blink_dir_root)
         self._logger.notice("slm_lib and image_lib returned")
-        self._mirror = MeadowlarkSlm1920(slm_lib, image_lib, lut_filename, wfc_filename, wl_calibration)
+        self._mirror = MeadowlarkSlm1920(
+            slm_lib, image_lib, lut_filename, wfc_filename, wl_calibration)
         self._logger.notice("MeadowlarkSlm1920 object created")
-        
+
     def _createPITipTiltMirror(self, mirrorDeviceSection):
         from plico_dm_server.controller.pi_tip_tilt_mirror \
             import PhysikInstrumenteTipTiltMirror
