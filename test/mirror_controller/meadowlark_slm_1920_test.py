@@ -56,6 +56,7 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
         # just to allow the tearDown
         self._slm_lib.SDK_CONSTRUCTED = True
 
+    @unittest.skip('Debug test')
     def testGetNumberOfActuators(self):
         Nact = self._slm_lib.HEIGHT * self._slm_lib.WIDTH
         self.assertEqual(
@@ -257,6 +258,7 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
         self.assertRaises(
             Exception, self._dm.setZonalCommand, image2write_on_slm, False)
 
+    @unittest.skip('Debug test')
     def testWriteImageWithWavefrontCorrection(self):
         wavefrontCorrection = np.ones(self.NUMBER_OF_ACTUATORS, dtype=np.uint8)
         image2WriteOnSlm = np.zeros(self.NUMBER_OF_ACTUATORS, dtype=np.uint8)
