@@ -9,7 +9,6 @@ from tempfile import gettempdir
 import os
 
 
-@unittest.skip('Debug test')
 class MeadowlarkSlm1920Test(unittest.TestCase):
 
     WFC_FNAME = "pippo.bmp"
@@ -44,12 +43,10 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
         self.assertTrue(self._slm_lib.SDK_CONSTRUCTED)
         self._dm.deinitialize()
 
-    @unittest.skip('Debug test')
     def testExceptionWhenSdkIsInizializedTwice(self):
         self._sdk.SDK_CONSTRUCTED_BEFORE = True
         self.assertRaises(Exception, self._sdk.initialize_meadowlark_SDK)
 
-    @unittest.skip('Debug test')
     def testDeleteSdkWhenItsNotCreatedRaisesException(self):
         self._slm_lib.SDK_CONSTRUCTED = False
         self.assertRaises(
@@ -57,14 +54,12 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
         # just to allow the tearDown
         self._slm_lib.SDK_CONSTRUCTED = True
 
-    @unittest.skip('Debug test')
     def testGetNumberOfActuators(self):
         Nact = self._slm_lib.HEIGHT * self._slm_lib.WIDTH
         self.assertEqual(
             Nact,
             self._dm.getNumberOfActuators())
 
-    @unittest.skip('Debug test')
     def testGetHeightAndWidthInPixels(self):
         width = self._slm_lib.WIDTH
         height = self._slm_lib.HEIGHT
@@ -73,18 +68,15 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
         self.assertEqual(
             height, self._dm.getHeightInPixels())
 
-    @unittest.skip('Debug test')
     def testSerialNumber(self):
         serial_number = self._slm_lib.VALID_SERIAL_NUMBER
         self.assertEqual(
             serial_number, self._dm.serialNumber())
 
-    @unittest.skip('Debug test')
     def testGetTemperatureInCelsius(self):
         self.assertEqual(self.MEAN_TEMPERATURE,
                          self._dm.getTemperatureInCelsius())
 
-    @unittest.skip('Debug test')
     def testModulo256Conversion(self):
         input_data = np.array([0, 0.2, 0.7,
                                1, 1.2, 1.9,
@@ -98,7 +90,6 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
 
         self.assertEqual(expected_data.tolist(), output_data.tolist())
 
-    @unittest.skip('Debug test')
     def testModulo256ConvertionOfTheSameArrayButWithDifferentShapes(self):
         one_dimensional_arr1 = np.array(np.arange(10), order='C')
         two_dimensional_arr2 = np.reshape(
@@ -118,27 +109,23 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
         output_arr2 = np.reshape(output_arr2, (10), order='C')
         self.assertTrue(np.allclose(output_arr1, output_arr2))
 
-    @unittest.skip('Debug test')
     def testWriteImageWithWrongFloatInputArray(self):
         input_image = np.linspace(-1., 1.5, 10)
         self.assertRaises(
             MeadowlarkError, self._dm._write_image, input_image)
 
-    @unittest.skip('Debug test')
     def testWriteImageError(self):
         self._slm_lib.FAIL_TASK_WRITE_IMAGE = True
         image = np.zeros(2, dtype=np.uint8, order='C')
         self.assertRaises(
             MeadowlarkError, self._dm._write_image, image_np=image)
 
-    @unittest.skip('Debug test')
     def testImageWriteCompleteError(self):
         self._slm_lib.FAIL_TASK_WRITE_IMAGE_COMPLETE = True
         image = np.zeros(2, dtype=np.uint8, order='C')
         self.assertRaises(
             MeadowlarkError, self._dm._write_image, image_np=image)
 
-    @unittest.skip('Debug test')
     def testWriteImageFromSameWfButWithDifferentDimension(self):
         # starting from the same wavefront
         Nact = self._slm_lib.HEIGHT * self._slm_lib.WIDTH
@@ -162,7 +149,6 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
         output_image2 = np.reshape(output_image2, (Nact,), order='C')
         self.assertTrue(np.allclose(output_image1, output_image2))
 
-    @unittest.skip('Debug test')
     def testSetZonalCommandWithWrongSizeRaises(self):
         wrongNumberOfActuators = self.NUMBER_OF_ACTUATORS - 10
         # 1D input zonalCommand array
@@ -190,14 +176,12 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
             self._dm.setZonalCommand,
             zonalCommand=commandVectorWithWrongCols)
 
-    @unittest.skip('Debug test')
     def testSetAndGetZonalCommand(self):
         zonalCommand = np.arange(self.NUMBER_OF_ACTUATORS)
         self._dm.setZonalCommand(zonalCommand, add_correction=True)
         actualCommand = self._dm.getZonalCommand()
         self.assertTrue(np.allclose(zonalCommand, actualCommand))
 
-    @unittest.skip('Debug test')
     def testNeed2CallWriteImageCompleteVariable(self):
         # testing NEED2CALL_WRITEIMAGECOMPLETE bool variable from FakeSlmLib
         # calling FakeSlmLib.Write_image and FakeSlmLib.ImageWriteComplete
@@ -225,7 +209,6 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
             self._slm_lib.ImageWriteComplete(*useless_input_parameters[:2])
             self.assertFalse(self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE)
 
-    @unittest.skip('Debug test')
     def testImageWriteAndImageWriteCompleteCorrectSequence(self):
         self.assertFalse(self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE)
         image2write_on_slm = np.zeros(self.NUMBER_OF_ACTUATORS, dtype=np.uint8)
@@ -251,7 +234,6 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
                 add_correction=False)
             self.assertFalse(self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE)
 
-    @unittest.skip('Debug test')
     def testImageWriteIsNotReady4TheNextImage(self):
         self.assertFalse(self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE)
         self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE = True
@@ -259,7 +241,6 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
         self.assertRaises(
             Exception, self._dm.setZonalCommand, image2write_on_slm, False)
 
-    @unittest.skip('Debug test')
     def testWriteImageWithWavefrontCorrection(self):
         wavefrontCorrection = np.ones(self.NUMBER_OF_ACTUATORS, dtype=np.uint8)
         image2WriteOnSlm = np.zeros(self.NUMBER_OF_ACTUATORS, dtype=np.uint8)
