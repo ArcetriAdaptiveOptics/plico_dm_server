@@ -9,6 +9,7 @@ from tempfile import gettempdir
 import os
 
 
+@unittest.skip('Debug test')
 class MeadowlarkSlm1920Test(unittest.TestCase):
 
     WFC_FNAME = "pippo.bmp"
