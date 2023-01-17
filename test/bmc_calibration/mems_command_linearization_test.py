@@ -5,6 +5,7 @@ import numpy as np
 from tempfile import gettempdir
 import os 
 from astropy.io import fits
+from numpy import dtype
 
 
 
@@ -65,7 +66,7 @@ class MemsCommandLinearizationTest(unittest.TestCase):
             self.mcl._calibrated_position,
             self.mcl._calibrated_cmd**2 *1e-6,
             rtol = 0.001))
-        
+        # TODO: check if rtol is actually working 
         for act in np.arange(len(self.mcl._actuators_list)):
             coeff = np.polyfit(self.mcl._calibrated_cmd[act,:],
                                self.mcl._calibrated_position[act,:],
@@ -118,10 +119,87 @@ class MemsCommandLinearizationTest(unittest.TestCase):
 
     def test_raises_if_vector_is_wrong_size(self):
         self.assertRaises(Exception, self.mcl.p2c, np.zeros(3))
+        
+    def test_reset_clipping_status(self):
+        wanna_apply_extreme_cmd = np.array([-1e9, 1e9])
+        expected_actuators_status = np.array([-1, 1], dtype = int)
+        computed_voltage  = self.mcl.p2c(wanna_apply_extreme_cmd)
+        actual_actuators_status = self.mcl.get_actuators_clipping_status()
+        self.assertTrue(np.all(expected_actuators_status == \
+                                   actual_actuators_status))
+        self.mcl.reset_clipping_status()
+        self.assertEqual(self.mcl.get_actuators_clipping_status(), None)
+        
+    def test_if_clipping_status_is_updated_properly(self):
+        # verifying clipping when p2c is called
+        # when clipping occurs 
+        wanna_apply_extreme_cmd = np.array([-1e9, 1e9])
+        expected_clipping_status = np.array([-1, 1], dtype = int)
+        computed_voltage  = self.mcl.p2c(wanna_apply_extreme_cmd)
+        actual_clipping_status = self.mcl.get_actuators_clipping_status()
+        self.assertTrue(expected_clipping_status.tolist(),
+                        actual_clipping_status.tolist())
+        # when it doesen't 
+        wanna_apply_aviable_cmd  = np.array([
+            self.mcl._calibrated_position[0, 0],
+            self.mcl._calibrated_position[1, 0]])
+        wanted_status = np.array([0, 0], dtype = int)
+        computed_voltage = self.mcl.p2c(wanna_apply_aviable_cmd)
+        actual_clipping_status = self.mcl.get_actuators_clipping_status()
+        self.assertTrue(expected_clipping_status.tolist(),
+                        actual_clipping_status.tolist())
+        # verifying clipping when c2p is called
+        # when clipping occurs
+        want_to_apply = np.array([100, -100])
+        expected_clipping_status = np.array([1, -1], dtype = int)
+        computed_position = self.mcl.c2p(want_to_apply)
+        actual_clipping_status = self.mcl.get_actuators_clipping_status()
+        self.assertTrue(expected_clipping_status.tolist(),
+                        actual_clipping_status.tolist())
+        # when it doesen't 
+        want_to_apply = np.array([
+            self.mcl._calibrated_cmd[0,-1],
+            self.mcl._calibrated_cmd[1, 0]])
+        expected_clipping_status = np.array([0, 0], dtype = int)
+        computed_position = self.mcl.c2p(want_to_apply)
+        actual_clipping_status = self.mcl.get_actuators_clipping_status()
+        self.assertTrue(expected_clipping_status.tolist(),
+                        actual_clipping_status.tolist())
+        
+    def test_if_clipping_values_are_assigned_properly(self):
+        # out of range pos/volt values
+        want_to_apply = np.array([100, -100])
+        # voltage clipping
+        expected_voltage = np.array([
+            np.max(self.mcl._calibrated_cmd[0]),
+            np.min(self.mcl._calibrated_cmd[1])])
+        computed_voltage = self.mcl.p2c(self.mcl.c2p(want_to_apply))
+        self.assertTrue(np.allclose(expected_voltage, computed_voltage))
+        # deflection clipping
+        expected_deflection = np.array([
+            np.max(self.mcl._calibrated_position[0]),
+            np.min(self.mcl._calibrated_position[1])])
+        computed_deflection = self.mcl.c2p(self.mcl.p2c(want_to_apply))
+        self.assertTrue(np.allclose(expected_deflection, computed_deflection))
     
+    def test_if_p2c_c2p_returns_the_same_position(self):
+        # actuators positions in the range of the calibration curves but
+        # different from the ones used to compute the interpolation
+        wanted_position = self.mcl._calibrated_position[:, 9901]
+        computed_position = self.mcl.c2p(self.mcl.p2c(wanted_position))
+        self.assertTrue(np.allclose(wanted_position, computed_position))
+        
+    def test_if_c2p_p2c_returns_the_same_cmd(self):
+        # actuators commands in the range of the calibration curves but
+        # different from the ones used to compute the interpolation
+        wanted_cmd = self.mcl._calibrated_cmd[:, 1]
+        computed_cmd = self.mcl.p2c(self.mcl.c2p(wanted_cmd))
+        self.assertTrue(np.allclose(wanted_cmd, computed_cmd))
+        
+
     def test_load_from_file(self):
         
-        act_list2save = np.array([1.,2.])
+        act_list2save = np.array([1., 2.])
         cmd2save = np.array([[1.,2.],[3.,4.]])
         pos2save = np.array([[5.,6.],[7.,8.]])
         ref2save ='PIPPO'

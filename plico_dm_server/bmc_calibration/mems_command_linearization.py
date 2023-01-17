@@ -3,6 +3,7 @@ from scipy.interpolate import CubicSpline
 from scipy.optimize import fsolve
 from scipy.interpolate import interp1d
 from astropy.io import fits
+from numpy import dtype
 
 class MemsCommandLinearization():
     '''
@@ -48,9 +49,15 @@ class MemsCommandLinearization():
     actuator_list()
         Returns the list of the selected actuators.
     p2c(position_vector)
-        Returns the voltage to be applied to measure a certain deflection, for each actuator.
+       Returns the voltage (au) to be applied to measure a certain deflection
+       (in meters), for each actuator.
     c2p(cmd_vector)
-        Returns the expected deflection corresponding to the applied voltage, for each actuator.
+        Returns the deflection (in meters) corresponding to the input voltage
+        command (au) for each actuator.
+    get_actuators_clipping_status()
+        Returns the actuation status of the last command applied to MEMS DM.
+    reset_clipping_status()
+        Resets the array relative to the actuation status of the actuators.
     save(fname)
         Saves the attributes into a fits file.
     load(fname)
@@ -87,16 +94,7 @@ class MemsCommandLinearization():
         self._n_used_actuators = len(self._actuators_list)
         self._create_interpolation()
         self._create_calibration_curves()
-
-    # def _create_interpolation(self):
-    #     # WARNING: interp 1d suppone che l argomento sia un array
-    #     # di valori monotonicamente crescenti(o comunque li riordina) e
-    #     # le deflessioni non lo sono, per questo motivo in
-    #     # plot_interpolated_functions osservo delle forti oscillazioni
-    #     self._finter = [interp1d(
-    #         self._deflection[i], self._cmd_vector[i], kind='cubic')
-    #         for i in range(self._cmd_vector.shape[0])]
-    # prova
+        self._clipping_vector = None
 
     def actuators_list(self):
         '''
@@ -144,37 +142,25 @@ class MemsCommandLinearization():
         
         Allows to compute the voltage vector command (cmd_vector), in
         au, corresponding to actuators' deflections (position_vector), in meters.  
-        Conversion from position to voltage command is provided by the 
-        calibration and linearization, that relies on a Cubic spline interpolation
-        of the measured deflection as a function of the applied voltage for each
-        actuator.  
+        Conversion from position to voltage command (and vice versa) is provided by the 
+        calibration and linearization rutines, that relies on a Cubic spline
+        interpolationof the measured deflection as a function of the applied
+        voltage for each actuator.  
         Actuators' calibration curves are sampled over 10**4 points
         (voltage-deflection).
-        ***add clipping description***
+        If an element of the input array exceeds the calibration range values,
+        the corresponding actuator is clipped to the maximum or minimum 
+        deflection value and then converted to the corresponding voltage command.
         
         Parameters
         ----------
         position_vector : numpy.ndarray
-            2-D numpy array containing the measured deflections (in meters) for
-            each actuator in the calibration phase. Its shape must be equal to
-            (Nact, Nmeas), where Nact is the total number of the DM's actuator
-            and Nmeas is the number o voltage/deflections applied/measured for
-            each actuator.
-            For instance, from the calibration of the MEMS Multi 5.5 DM,
-            with 140 actuators, with 20 measured deflection for each actuators
-            the expected shape of position_vector is (140, 20)
+          
             
         Returns
         -------
         cmd_vector : numpy.ndarray
-            2-D numpy array containing the expected voltages (in au) to be 
-            applied on actuator. Its shape is equal to (Nact, Nmeas),
-            where Nact is the total number of the DM's actuator
-            and Nmeas is the number o voltage/deflections applied/measured for
-            each actuator.
-            For instance, from the calibration of the MEMS Multi 5.5 DM,
-            with 140 actuators, with 20 measured deflection for each actuators
-            the expected shape of cmd_vector is (140, 20).
+            
         '''
         assert len(position_vector) == self._n_used_actuators, \
             "Position vector should have %d elements, got %d" % (
@@ -187,11 +173,54 @@ class MemsCommandLinearization():
         return cmd_vector
 
     def c2p(self, cmd_vector):
-        # TODO : add documentation and tension clipping
+        '''
+        Returns the deflection (in meters) corresponding to the input voltage
+        command (au) for each actuator.
+        
+        Allows to compute the position vector command (position_vector), in
+        meters, corresponding to actuators' voltage commands (cmd_vector), in au.  
+        Conversion from position to voltage command (and vice versa) is provided
+        by the calibration and linearization rutines, that relies on a Cubic
+        spline interpolation of the measured deflection as a function of the
+        applied voltage for each actuator.  
+        Actuators' calibration curves are sampled over 10**4 points
+        (voltage-deflection).
+        If an element in the input array exceeds the calibration range values,
+        the corresponding actuator is clipped to the maximum or minimum voltage
+        value and then converted into the corresponding deflection.
+        
+        Parameters
+        ----------
+        cmd_vector : numpy.ndarray
+            one dimensional numpy array containing the voltage command values
+            of the selected actuators
+        
+        Returns
+        -------
+        position_vector : numpy.ndarray
+            one dimensional numpy array containing the the actuators deflections
+            relative to cmd_vector 
+        '''
         assert len(cmd_vector) == self._n_used_actuators, \
             "Command vector should have %d elements, got %d" % (
                 self._n_used_actuators, len(cmd_vector))
-
+        if self._clipping_vector is None:
+            self._clipping_vector = np.zeros(self._n_used_actuators, dtype = int)
+        
+        for act in self._actuators_list:
+            idx = self._get_act_idx(act)
+            cmd_span = self._calibrated_cmd[idx, :]
+            max_cmd = cmd_span.max()
+            min_cmd = cmd_span.min()
+            if cmd_vector[idx] > max_cmd :
+                self._clipping_vector[idx] = 1
+                cmd_vector[idx] = max_cmd
+            if cmd_vector[idx] < min_cmd : 
+                self._clipping_vector[idx] = -1
+                cmd_vector[idx] = min_cmd
+            else:
+                self._clipping_vector[idx] = 0
+        
         position_vector = np.zeros(self._n_used_actuators)
         for idx, act in enumerate(self._actuators_list):
             fidx = self._get_act_idx(act)
@@ -235,6 +264,9 @@ class MemsCommandLinearization():
             Voltage command able to reproduce the deflection pos.
             Expressed in au.
         '''
+        if self._clipping_vector is None:
+            self._clipping_vector = np.zeros(self._n_used_actuators, dtype = int)
+            
         idx = self._get_act_idx(act)
         cmd_span = self._calibrated_cmd[idx]
         pos_span = self._calibrated_position[idx]
@@ -242,12 +274,15 @@ class MemsCommandLinearization():
         min_clipped_pos = np.min(pos_span)
         # avro una sensibilita dell ordine di 1.e-4 in tensione,ok
         if(pos > max_clipped_pos):
+            self._clipping_vector[idx] = 1
             idx_clipped_cmd = np.where(max_clipped_pos == pos_span)[0][0]
             return cmd_span[idx_clipped_cmd]
         if(pos < min_clipped_pos):
+            self._clipping_vector[idx] = -1
             idx_clipped_cmd = np.where(min_clipped_pos == pos_span)[0][0]
             return cmd_span[idx_clipped_cmd]
         else:
+            self._clipping_vector[idx] = 0
             pos_a = pos_span[pos_span <= pos].max()
             pos_b = pos_span[pos_span >= pos].min()
             # nel caso di funz biunivoca, viene scelto un
@@ -280,18 +315,24 @@ class MemsCommandLinearization():
             Expressed in au.
             
         '''
+        if self._clipping_vector is None:
+            self._clipping_vector = np.zeros(self._n_used_actuators, dtype = int)
+            
         idx = self._get_act_idx(act)
         cmd_span = self._calibrated_cmd[idx]
         pos_span = self._calibrated_position[idx]
         max_clipped_pos = np.max(pos_span)
         min_clipped_pos = np.min(pos_span)
         if(pos > max_clipped_pos):
+            self._clipping_vector[idx] = 1
             idx_clipped_cmd = np.where(max_clipped_pos == pos_span)[0][0]
             return cmd_span[idx_clipped_cmd]
         if(pos < min_clipped_pos):
+            self._clipping_vector[idx] = -1
             idx_clipped_cmd = np.where(min_clipped_pos == pos_span)[0][0]
             return cmd_span[idx_clipped_cmd]
         else:
+            self._clipping_vector[idx] = 0
             pos_a = pos_span[pos_span <= pos].max()
             pos_b = pos_span[pos_span >= pos].min()
             if(abs(pos - pos_a) > abs(pos - pos_b)):
@@ -319,6 +360,34 @@ class MemsCommandLinearization():
         fits.append(fname, self._cmd_vector)
         fits.append(fname, self._deflection)
 
+    def get_actuators_clipping_status(self):
+        '''
+        Returns the actuation status of the last command applied to MEMS DM
+        in a one dimensional numpy array with integer elements:
+        +1 if the actuator reaches the maximum voltage or deflection command
+         0 if the actuator doesn't clip
+        -1 if the actuator reaches the minimum voltage or deflection command
+        Note: the index of the returned array is the label of the corresponding
+        actuator!
+        
+        Returns
+        -------
+        clipping_vector : numpy.ndarray or None
+            one dimensional array with integer entries relative to each actuator
+            clipping status (1, 0 or -1). If no commands have been applied yet
+            returns None
+        '''
+        # if self._clipping_vector is None:
+        #     self._clipping_vector = np.zeros(self._n_used_actuators, dtype = int)    
+        return self._clipping_vector
+    
+    def reset_clipping_status(self):
+        '''
+        Resets the one dimensional array relative to the actuation status
+        of the actuators.
+        '''
+        self._clipping_vector = None
+    
     @staticmethod
     def load(fname):
         '''
