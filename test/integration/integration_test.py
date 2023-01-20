@@ -183,7 +183,7 @@ class IntegrationTest(unittest.TestCase):
         self._testGetSnapshot()
         self._testServerInfo()
         self._checkBackdoor()
-        self._wasSuccessful = False
+        self._wasSuccessful = True
 
 
 if __name__ == "__main__":
