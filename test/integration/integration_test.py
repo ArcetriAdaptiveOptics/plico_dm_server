@@ -31,7 +31,11 @@ class IntegrationTest(unittest.TestCase):
     CONF_FILE = 'test/integration/conffiles/plico_dm_server.conf'
     CALIB_FOLDER = 'test/integration/calib'
     CONF_SECTION = Constants.PROCESS_MONITOR_CONFIG_SECTION
-    SERVER_LOG_PATH = os.path.join(LOG_DIR, "%s.log" % CONF_SECTION)
+    PROCESS_MONITOR_LOG_PATH = os.path.join(LOG_DIR, "%s.log" % CONF_SECTION)
+    SERVER_1_LOG_PATH = os.path.join(
+        LOG_DIR, "%s.log" % Constants.DEFORMABLE_MIRROR_1_CONFIG_SECTION)
+    SERVER_2_LOG_PATH = os.path.join(
+        LOG_DIR, "%s.log" % Constants.DEFORMABLE_MIRROR_2_CONFIG_SECTION)
     BIN_DIR = os.path.join(TEST_DIR, "apps", "bin")
     SOURCE_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                               "../..")
@@ -68,7 +72,9 @@ class IntegrationTest(unittest.TestCase):
             shutil.rmtree(self.TEST_DIR)
 
     def tearDown(self):
-        TestHelper.dumpFileToStdout(self.SERVER_LOG_PATH)
+        TestHelper.dumpFileToStdout(self.PROCESS_MONITOR_LOG_PATH)
+        TestHelper.dumpFileToStdout(self.SERVER_1_LOG_PATH)
+        TestHelper.dumpFileToStdout(self.SERVER_2_LOG_PATH)
 
         if self.server is not None:
             TestHelper.terminateSubprocess(self.server)
@@ -92,19 +98,13 @@ class IntegrationTest(unittest.TestCase):
              self.CONF_SECTION],
             stdout=serverLog, stderr=serverLog)
         Poller(5).check(MessageInFileProbe(
-            ProcessMonitorRunner.RUNNING_MESSAGE, self.SERVER_LOG_PATH))
+            ProcessMonitorRunner.RUNNING_MESSAGE, self.PROCESS_MONITOR_LOG_PATH))
 
     def _testProcessesActuallyStarted(self):
-        controllerLogFile = os.path.join(
-            self.LOG_DIR,
-            '%s.log' % Constants.DEFORMABLE_MIRROR_1_CONFIG_SECTION)
         Poller(5).check(MessageInFileProbe(
-            Runner.RUNNING_MESSAGE, controllerLogFile))
-        controller2LogFile = os.path.join(
-            self.LOG_DIR,
-            '%s.log' % Constants.DEFORMABLE_MIRROR_2_CONFIG_SECTION)
+            Runner.RUNNING_MESSAGE, self.SERVER_1_LOG_PATH))
         Poller(5).check(MessageInFileProbe(
-            Runner.RUNNING_MESSAGE, controller2LogFile))
+            Runner.RUNNING_MESSAGE, self.SERVER_2_LOG_PATH))
 
     def _buildClients(self):
         ports1 = ZmqPorts.fromConfiguration(
@@ -183,7 +183,7 @@ class IntegrationTest(unittest.TestCase):
         self._testGetSnapshot()
         self._testServerInfo()
         self._checkBackdoor()
-        self._wasSuccessful = True
+        self._wasSuccessful = False
 
 
 if __name__ == "__main__":
