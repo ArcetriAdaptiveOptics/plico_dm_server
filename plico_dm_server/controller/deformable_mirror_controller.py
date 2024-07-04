@@ -42,7 +42,9 @@ class DeformableMirrorController(Stepable, Snapshotable, Hackerable,
         self._modalCommand = None
         self._modalBasis = None
 #        self._setModalBasis('zonal')
+        self._logger.notice('Loading flat zonal command %s' % flatZonalCommandTag)
         self.load_reference(flatZonalCommandTag)
+        self._logger.notice('Setting zero shape')
         self.setShape(np.zeros(self._getNumberOfModes()))
         self._logger.notice('Deformable Mirror Controller created')
 
