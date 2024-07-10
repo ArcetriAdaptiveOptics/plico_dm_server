@@ -168,6 +168,7 @@ class Runner(BaseRunner):
             self.rpc(),
             self._calibrationManager,
             flatFileTag)
+        self._configureDiscoveryServer('plico_dm', self._mirror.__class__.__name__)
 
     def _runLoop(self):
         self._logRunning()
