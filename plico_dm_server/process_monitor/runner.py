@@ -9,6 +9,7 @@ import psutil
 from plico.utils.base_runner import BaseRunner
 from plico.utils.decorator import override
 from plico.utils.logger import Logger
+from plico.types.server_info import ServerInfo
 from plico_dm_server.utils.constants import Constants
 
 
