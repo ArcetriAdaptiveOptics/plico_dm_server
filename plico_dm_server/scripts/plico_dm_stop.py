@@ -10,8 +10,7 @@ __version__= "$Id: plico_dm_stop.py 27 2018-01-27 08:48:07Z lbusoni $"
 def main():
     logging.basicConfig(level=logging.INFO)
     processNames= [Constants.START_PROCESS_NAME,
-                   Constants.controller_1_PROCESS_NAME,
-                   Constants.controller_2_PROCESS_NAME,
+                   Constants.SERVER_PROCESS_NAME,
                    ]
 
     for each in processNames:

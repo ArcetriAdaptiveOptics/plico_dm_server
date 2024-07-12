@@ -79,8 +79,7 @@ setup(name=NAME,
                 ],
       entry_points={
           'console_scripts': [
-              'plico_dm_controller_1=plico_dm_server.scripts.plico_dm_controller_1:main',
-              'plico_dm_controller_2=plico_dm_server.scripts.plico_dm_controller_2:main',
+              'plico_dm_server=plico_dm_server.scripts.plico_dm_controller:main',
               'plico_dm_kill_all=plico_dm_server.scripts.plico_dm_kill_processes:main',
               'plico_dm_start=plico_dm_server.scripts.plico_dm_process_monitor:main',
               'plico_dm_stop=plico_dm_server.scripts.plico_dm_stop:main',
