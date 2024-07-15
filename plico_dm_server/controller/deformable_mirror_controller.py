@@ -115,6 +115,7 @@ class DeformableMirrorController(Stepable, Snapshotable, Hackerable,
         snapshot[SnapshotEntry.SERIAL_NUMBER] = \
             self._getDeformableMirrorSerialNumber()
         snapshot[SnapshotEntry.STEP_COUNTER] = self._getStepCounter()
+        snapshot[SnapshotEntry.REFERENCE_COMMAND_TAG] = status.reference_command_tag
         return Snapshotable.prepend(prefix, snapshot)
 
     def _getDeformableMirrorSerialNumber(self):
@@ -128,7 +129,7 @@ class DeformableMirrorController(Stepable, Snapshotable, Hackerable,
                 self._getNumberOfActuators(),
                 self._getNumberOfModes(),
                 self._commandCounter,
-                self._flatTag)
+                '%s' % self._flatTag)
             self._logger.debug(self._mirrorStatus)
         return self._mirrorStatus
 
@@ -141,7 +142,10 @@ class DeformableMirrorController(Stepable, Snapshotable, Hackerable,
             tag, self._mirror.getZonalCommand())
 
     def load_reference(self, flat_tag):
-        self._flatCmd = self._calMgr.loadZonalCommand(flat_tag)
+        if flat_tag is not None:
+            self._flatCmd = self._calMgr.loadZonalCommand(flat_tag)
+        else:
+            self._flatCmd = np.zeros(self._getNumberOfActuators())
         self._flatTag = flat_tag
 
     def get_reference_shape(self):

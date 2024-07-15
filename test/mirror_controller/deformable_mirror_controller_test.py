@@ -61,6 +61,15 @@ class DeformableMirrorControllerTest(unittest.TestCase):
         serialNumberKey = 'baar.%s' % SnapshotEntry.SERIAL_NUMBER
         self.assertEqual(self._dmSerialNumber, snapshot[serialNumberKey])
 
+    def testGetSnapshotWithNoFlat(self):
+        # Overwrite flat temporarily
+        self._ctrl.load_reference(None)
+        snapshot = self._ctrl.getSnapshot('baar')
+        refCmdTagKey = 'baar.%s' % SnapshotEntry.REFERENCE_COMMAND_TAG
+        self.assertEqual('None', snapshot[refCmdTagKey])
+        # Restore previous flat
+        self._ctrl.load_reference('foo_foo_flatters')
+
     def testSetGetModalCommands(self):
         nModes = self._ctrl._getNumberOfModes()
         shapeCommands = np.arange(nModes) * 3.14
@@ -104,6 +113,16 @@ class DeformableMirrorControllerTest(unittest.TestCase):
             shapeCommands + current_reference,
             self._ctrl.get_reference_shape())
 
+    def test_load_reference_with_tag(self):
+        flat = np.random.rand(self._mirror.getNumberOfActuators())
+        self._calMgr.saveZonalCommand('flat', flat)
+        self._ctrl.load_reference('flat')
+        np.testing.assert_allclose(flat, self._ctrl._flatCmd)
+
+    def test_load_reference_with_none(self):
+        zero = np.zeros(self._mirror.getNumberOfActuators())
+        self._ctrl.load_reference(None)
+        np.testing.assert_allclose(zero, self._ctrl._flatCmd)
 
 if __name__ == "__main__":
     unittest.main()
