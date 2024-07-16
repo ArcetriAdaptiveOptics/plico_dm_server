@@ -15,6 +15,8 @@ class SimulatedDeformableMirror(AbstractDeformableMirror):
         self._logger= Logger.of('Simulated Deformable Mirror')
         self._zonalCommand= None
 
+    def isReady(self):
+        return True
 
     @override
     def setZonalCommand(self, zonalCommand):
