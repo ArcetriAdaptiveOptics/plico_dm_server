@@ -52,6 +52,8 @@ class Runner(BaseRunner):
             self._createBmcDeformableMirror(mirrorDeviceSection)
         elif mirrorModel == 'meadowlarkSLM':
             self._createMeadowlarkSlm(mirrorDeviceSection)
+        elif mirrorModel == 'SPLATT':
+            self._createSPLATTMirror(mirrorDeviceSection)
         else:
             raise KeyError('Unsupported mirror model %s' % mirrorModel)
 
@@ -131,6 +133,10 @@ class Runner(BaseRunner):
         tt.setUp()
         self._mirror = PhysikInstrumenteTipTiltMirror(
             serialNumber, tt)
+
+    def _createSPLATTMirror(self, mirrorDeviceSection):
+        from plico_dm_server.controller.splatt_dm import SPLATTDeformableMirror
+        self._mirror = SPLATTDeformableMirror()
 
     def _createCalibrationManager(self):
         calibrationRootDir = self.configuration.calibrationRootDir()
