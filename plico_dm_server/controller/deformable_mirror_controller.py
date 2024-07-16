@@ -45,7 +45,8 @@ class DeformableMirrorController(Stepable, Snapshotable, Hackerable,
         self._logger.notice('Loading flat zonal command %s' % flatZonalCommandTag)
         self.load_reference(flatZonalCommandTag)
         self._logger.notice('Setting zero shape')
-        self.setShape(np.zeros(self._getNumberOfModes()))
+        if self._mirror.isReady():
+            self.setShape(np.zeros(self._getNumberOfModes()))
         self._logger.notice('Deformable Mirror Controller created')
 
     @override
@@ -150,3 +151,10 @@ class DeformableMirrorController(Stepable, Snapshotable, Hackerable,
 
     def get_reference_shape(self):
         return self._flatCmd
+
+    def __getattr__(self, attrname):
+        if hasattr(self._mirror, attrname):
+            return getattr(self._mirror, attrname)
+        else:
+            raise AttributeError
+

@@ -14,6 +14,8 @@ class PhysikInstrumenteTipTiltMirror(AbstractDeformableMirror):
         self._tt.stopModulation()
         self._tt.disableControlLoop()
 
+    def isReady(self):
+        return True
 
     @override
     def setZonalCommand(self, zonalCommand):

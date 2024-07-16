@@ -29,6 +29,8 @@ class AlpaoDeformableMirror(AbstractDeformableMirror):
         self._logger= Logger.of('ALPAO Deformable Mirror')
         self._dm.Reset()
 
+    def isReady(self):
+        return True
 
     @override
     def setZonalCommand(self, zonalCommand):
