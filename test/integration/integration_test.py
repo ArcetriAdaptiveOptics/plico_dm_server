@@ -16,7 +16,7 @@ from plico_dm_server.utils.starter_script_creator import StarterScriptCreator
 from plico_dm_server.utils.process_startup_helper import ProcessStartUpHelper
 from plico_dm.client.deformable_mirror_client import DeformableMirrorClient
 from plico_dm_server.controller.runner import Runner
-from plico_dm_server.process_monitor.runner import Runner as ProcessMonitorRunner
+from plico.utils.process_monitor_runner import RUNNING_MESSAGE as MONITOR_RUNNING_MESSAGE
 from plico.rpc.sockets import Sockets
 from plico.rpc.zmq_ports import ZmqPorts
 from plico_dm_server.utils.constants import Constants
@@ -96,7 +96,7 @@ class IntegrationTest(unittest.TestCase):
              self.CONF_SECTION],
             stdout=serverLog, stderr=serverLog)
         Poller(5).check(MessageInFileProbe(
-            ProcessMonitorRunner.RUNNING_MESSAGE, self.PROCESS_MONITOR_LOG_PATH))
+            MONITOR_RUNNING_MESSAGE(Constants.SERVER_PROCESS_NAME), self.PROCESS_MONITOR_LOG_PATH))
 
     def _testProcessesActuallyStarted(self):
         controllerLogFile = os.path.join(
