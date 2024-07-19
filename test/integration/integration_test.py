@@ -123,7 +123,6 @@ class IntegrationTest(unittest.TestCase):
         ports2 = ZmqPorts.fromConfiguration(
             self.configuration,
             '%s%d' % (self._server_config_prefix, 2))
-        self.client2Axis = 2
         self.client2 = DeformableMirrorClient(
             self.rpc, Sockets(ports2, self.rpc))
         self.clientAll = ServerInfoClient(
