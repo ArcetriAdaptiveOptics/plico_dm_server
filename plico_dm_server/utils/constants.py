@@ -8,9 +8,6 @@ class Constants:
     THIS_PACKAGE= 'plico_dm_server'
 
     PROCESS_MONITOR_CONFIG_SECTION= 'processMonitor'
-    SERVER_CONFIG_SECTION_PREFIX = 'server'
-
-    PROCESS_MONITOR_PORT = 8989
 
     # TODO: must be the same of console_scripts in setup.py
     START_PROCESS_NAME= 'plico_dm_start'

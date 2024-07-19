@@ -32,7 +32,6 @@ class IntegrationTest(unittest.TestCase):
     CONF_FILE = 'test/integration/conffiles/plico_dm_server.conf'
     CALIB_FOLDER = 'test/integration/calib'
     CONF_SECTION = Constants.PROCESS_MONITOR_CONFIG_SECTION
-    SERVER_LOG_PATH = os.path.join(LOG_DIR, "%s.log" % CONF_SECTION)
 
     PROCESS_MONITOR_LOG_PATH = os.path.join(LOG_DIR, "%s.log" % CONF_SECTION)
     BIN_DIR = os.path.join(TEST_DIR, "apps", "bin")
@@ -49,9 +48,19 @@ class IntegrationTest(unittest.TestCase):
         self.configuration = Configuration()
         self.configuration.load(self.CONF_FILE)
         self.rpc = ZmqRemoteProcedureCall()
+        self._server_config_prefix = self.configuration.getValue(
+                                       Constants.PROCESS_MONITOR_CONFIG_SECTION,
+                                       'server_config_prefix')
 
         calibrationRootDir = self.configuration.calibrationRootDir()
         self._setUpCalibrationTempFolder(calibrationRootDir)
+
+        self.CONTROLLER_1_LOGFILE = os.path.join(self.LOG_DIR, '%s%d.log' % (self._server_config_prefix, 1))
+        self.CONTROLLER_2_LOGFILE = os.path.join(self.LOG_DIR, '%s%d.log' % (self._server_config_prefix, 2))
+        self.PROCESS_MONITOR_PORT = self.configuration.getValue(
+                                       Constants.PROCESS_MONITOR_CONFIG_SECTION,
+                                       'port', getint=True)
+
 
     def _setUpBasicLogging(self):
         logging.basicConfig(level=logging.DEBUG)
@@ -72,7 +81,8 @@ class IntegrationTest(unittest.TestCase):
 
     def tearDown(self):
         TestHelper.dumpFileToStdout(self.PROCESS_MONITOR_LOG_PATH)
-        TestHelper.dumpFileToStdout(self.SERVER_LOG_PATH)
+        TestHelper.dumpFileToStdout(self.CONTROLLER_1_LOGFILE)
+        TestHelper.dumpFileToStdout(self.CONTROLLER_2_LOGFILE)
 
         if self.server is not None:
             TestHelper.terminateSubprocess(self.server)
@@ -99,32 +109,26 @@ class IntegrationTest(unittest.TestCase):
             MONITOR_RUNNING_MESSAGE(Constants.SERVER_PROCESS_NAME), self.PROCESS_MONITOR_LOG_PATH))
 
     def _testProcessesActuallyStarted(self):
-        controllerLogFile = os.path.join(
-            self.LOG_DIR,
-            '%s%d.log' % (Constants.SERVER_CONFIG_SECTION_PREFIX, 1))
         Poller(5).check(MessageInFileProbe(
-            Runner.RUNNING_MESSAGE, controllerLogFile))
-        controller2LogFile = os.path.join(
-            self.LOG_DIR,
-            '%s%d.log' % (Constants.SERVER_CONFIG_SECTION_PREFIX, 2))
+            Runner.RUNNING_MESSAGE, self.CONTROLLER_1_LOGFILE))
         Poller(5).check(MessageInFileProbe(
-            Runner.RUNNING_MESSAGE, controller2LogFile))
+            Runner.RUNNING_MESSAGE, self.CONTROLLER_2_LOGFILE))
 
     def _buildClients(self):
         ports1 = ZmqPorts.fromConfiguration(
             self.configuration,
-            '%s%d' % (Constants.SERVER_CONFIG_SECTION_PREFIX, 1))
+            '%s%d' % (self._server_config_prefix, 1))
         self.client1 = DeformableMirrorClient(
             self.rpc, Sockets(ports1, self.rpc))
         ports2 = ZmqPorts.fromConfiguration(
             self.configuration,
-            '%s%d' % (Constants.SERVER_CONFIG_SECTION_PREFIX, 2))
+            '%s%d' % (self._server_config_prefix, 2))
         self.client2Axis = 2
         self.client2 = DeformableMirrorClient(
             self.rpc, Sockets(ports2, self.rpc))
         self.clientAll = ServerInfoClient(
             self.rpc,
-            Sockets(ZmqPorts('localhost', Constants.PROCESS_MONITOR_PORT), self.rpc).serverRequest(),
+            Sockets(ZmqPorts('localhost', self.PROCESS_MONITOR_PORT), self.rpc).serverRequest(),
             self._logger)
 
     def _testSetShape(self):
