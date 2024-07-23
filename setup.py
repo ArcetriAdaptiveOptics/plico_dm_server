@@ -88,7 +88,7 @@ setup(name=NAME,
       package_data={
           'plico_dm_server': ['conf/plico_dm_server.conf', 'calib/*'],
       },
-      install_requires=["plico>=0.28",
+      install_requires=["plico>=0.30",
                         "plico_dm>=1.1.0",
                         "numpy",
                         "scipy",
