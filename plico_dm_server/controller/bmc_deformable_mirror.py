@@ -31,6 +31,9 @@ class BmcDeformableMirror(AbstractDeformableMirror):
         # TODO: is this really needed? Does BmcDm really crash?
         self._initializeToZero()
 
+    def isReady(self):
+        return True
+
     def _initializeToZero(self):
         self._logger.notice(
             "set mirror to zero. Avoid crashes"

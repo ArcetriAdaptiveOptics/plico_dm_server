@@ -197,6 +197,9 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
         self._wl_calib_reset = None
         self._wfc_reset = None
 
+    def isReady(self):
+        return True
+
     def _read_parameters_and_write_zero_image(self):
         self._logger.notice("Reading SLM height")
         self._height = c_uint(

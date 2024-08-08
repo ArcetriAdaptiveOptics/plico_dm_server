@@ -108,3 +108,5 @@ venv.bak/
 .DS_Store
 
 .vscode/settings.json
+plico.code-workspace
+.gitignore

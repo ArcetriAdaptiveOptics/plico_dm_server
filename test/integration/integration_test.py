@@ -11,11 +11,12 @@ from test.test_helper import TestHelper, Poller, MessageInFileProbe,\
 from plico.utils.configuration import Configuration
 from plico.rpc.zmq_remote_procedure_call import ZmqRemoteProcedureCall
 from plico.utils.logger import Logger
+from plico.client.serverinfo_client import ServerInfoClient
 from plico_dm_server.utils.starter_script_creator import StarterScriptCreator
 from plico_dm_server.utils.process_startup_helper import ProcessStartUpHelper
 from plico_dm.client.deformable_mirror_client import DeformableMirrorClient
 from plico_dm_server.controller.runner import Runner
-from plico_dm_server.process_monitor.runner import Runner as ProcessMonitorRunner
+from plico.utils.process_monitor_runner import RUNNING_MESSAGE as MONITOR_RUNNING_MESSAGE
 from plico.rpc.sockets import Sockets
 from plico.rpc.zmq_ports import ZmqPorts
 from plico_dm_server.utils.constants import Constants
@@ -31,11 +32,8 @@ class IntegrationTest(unittest.TestCase):
     CONF_FILE = 'test/integration/conffiles/plico_dm_server.conf'
     CALIB_FOLDER = 'test/integration/calib'
     CONF_SECTION = Constants.PROCESS_MONITOR_CONFIG_SECTION
+
     PROCESS_MONITOR_LOG_PATH = os.path.join(LOG_DIR, "%s.log" % CONF_SECTION)
-    SERVER_1_LOG_PATH = os.path.join(
-        LOG_DIR, "%s.log" % Constants.DEFORMABLE_MIRROR_1_CONFIG_SECTION)
-    SERVER_2_LOG_PATH = os.path.join(
-        LOG_DIR, "%s.log" % Constants.DEFORMABLE_MIRROR_2_CONFIG_SECTION)
     BIN_DIR = os.path.join(TEST_DIR, "apps", "bin")
     SOURCE_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                               "../..")
@@ -50,9 +48,19 @@ class IntegrationTest(unittest.TestCase):
         self.configuration = Configuration()
         self.configuration.load(self.CONF_FILE)
         self.rpc = ZmqRemoteProcedureCall()
+        self._server_config_prefix = self.configuration.getValue(
+                                       Constants.PROCESS_MONITOR_CONFIG_SECTION,
+                                       'server_config_prefix')
 
         calibrationRootDir = self.configuration.calibrationRootDir()
         self._setUpCalibrationTempFolder(calibrationRootDir)
+
+        self.CONTROLLER_1_LOGFILE = os.path.join(self.LOG_DIR, '%s%d.log' % (self._server_config_prefix, 1))
+        self.CONTROLLER_2_LOGFILE = os.path.join(self.LOG_DIR, '%s%d.log' % (self._server_config_prefix, 2))
+        self.PROCESS_MONITOR_PORT = self.configuration.getValue(
+                                       Constants.PROCESS_MONITOR_CONFIG_SECTION,
+                                       'port', getint=True)
+
 
     def _setUpBasicLogging(self):
         logging.basicConfig(level=logging.DEBUG)
@@ -73,8 +81,8 @@ class IntegrationTest(unittest.TestCase):
 
     def tearDown(self):
         TestHelper.dumpFileToStdout(self.PROCESS_MONITOR_LOG_PATH)
-        TestHelper.dumpFileToStdout(self.SERVER_1_LOG_PATH)
-        TestHelper.dumpFileToStdout(self.SERVER_2_LOG_PATH)
+        TestHelper.dumpFileToStdout(self.CONTROLLER_1_LOGFILE)
+        TestHelper.dumpFileToStdout(self.CONTROLLER_2_LOGFILE)
 
         if self.server is not None:
             TestHelper.terminateSubprocess(self.server)
@@ -98,76 +106,80 @@ class IntegrationTest(unittest.TestCase):
              self.CONF_SECTION],
             stdout=serverLog, stderr=serverLog)
         Poller(5).check(MessageInFileProbe(
-            ProcessMonitorRunner.RUNNING_MESSAGE, self.PROCESS_MONITOR_LOG_PATH))
+            MONITOR_RUNNING_MESSAGE(Constants.SERVER_PROCESS_NAME), self.PROCESS_MONITOR_LOG_PATH))
 
     def _testProcessesActuallyStarted(self):
         Poller(5).check(MessageInFileProbe(
-            Runner.RUNNING_MESSAGE, self.SERVER_1_LOG_PATH))
+            Runner.RUNNING_MESSAGE, self.CONTROLLER_1_LOGFILE))
         Poller(5).check(MessageInFileProbe(
-            Runner.RUNNING_MESSAGE, self.SERVER_2_LOG_PATH))
+            Runner.RUNNING_MESSAGE, self.CONTROLLER_2_LOGFILE))
 
     def _buildClients(self):
         ports1 = ZmqPorts.fromConfiguration(
             self.configuration,
-            Constants.DEFORMABLE_MIRROR_1_CONFIG_SECTION)
-        self.deformableMirrorClient1 = DeformableMirrorClient(
+            '%s%d' % (self._server_config_prefix, 1))
+        self.client1 = DeformableMirrorClient(
             self.rpc, Sockets(ports1, self.rpc))
         ports2 = ZmqPorts.fromConfiguration(
             self.configuration,
-            Constants.DEFORMABLE_MIRROR_2_CONFIG_SECTION)
-        self.deformableMirrorClient2 = DeformableMirrorClient(
+            '%s%d' % (self._server_config_prefix, 2))
+        self.client2 = DeformableMirrorClient(
             self.rpc, Sockets(ports2, self.rpc))
+        self.clientAll = ServerInfoClient(
+            self.rpc,
+            Sockets(ZmqPorts('localhost', self.PROCESS_MONITOR_PORT), self.rpc).serverRequest(),
+            self._logger)
 
     def _testSetShape(self):
-        numberOfModes = self.deformableMirrorClient1.get_number_of_modes()
+        numberOfModes = self.client1.get_number_of_modes()
         mirrorModalAmplitude = np.arange(numberOfModes) * 3.141
-        self.deformableMirrorClient1.set_shape(mirrorModalAmplitude)
+        self.client1.set_shape(mirrorModalAmplitude)
         Poller(3).check(ExecutionProbe(
             lambda: self.assertTrue(
                 np.allclose(
                     mirrorModalAmplitude,
-                    self.deformableMirrorClient1.get_shape()))))
+                    self.client1.get_shape()))))
 
     def _testSaveAndLoadReference(self):
-        numberOfModes = self.deformableMirrorClient1.get_number_of_modes()
+        numberOfModes = self.client1.get_number_of_modes()
         mirrorShape = np.arange(numberOfModes) * 3.141
-        self.deformableMirrorClient1.set_shape(mirrorShape)
-        current_reference = self.deformableMirrorClient1.get_reference_shape()
-        self.deformableMirrorClient1.save_current_shape_as_reference('foogoo')
-        self.deformableMirrorClient1.load_reference('foogoo')
+        self.client1.set_shape(mirrorShape)
+        current_reference = self.client1.get_reference_shape()
+        self.client1.save_current_shape_as_reference('foogoo')
+        self.client1.load_reference('foogoo')
         np.testing.assert_allclose(
             current_reference + mirrorShape,
-            self.deformableMirrorClient1.get_reference_shape())
+            self.client1.get_reference_shape())
 
     def _checkBackdoor(self):
-        self.deformableMirrorClient1.execute(
+        self.client1.execute(
             "import numpy as np; "
             "self._myarray= np.array([1, 2])")
         self.assertEqual(
             repr(np.array([1, 2])),
-            self.deformableMirrorClient1.eval("self._myarray"))
-        self.deformableMirrorClient1.execute("self._foobar= 42")
+            self.client1.eval("self._myarray"))
+        self.client1.execute("self._foobar= 42")
         self.assertEqual(
             "42",
-            self.deformableMirrorClient1.eval("self._foobar"))
+            self.client1.eval("self._foobar"))
 
     def _testGetStatus(self):
-        status = self.deformableMirrorClient1.get_status()
+        status = self.client1.get_status()
         cmdCounter = status.command_counter
-        self.deformableMirrorClient1.set_shape(
-            self.deformableMirrorClient1.get_shape() * 2.0)
+        self.client1.set_shape(
+            self.client1.get_shape() * 2.0)
         Poller(3).check(ExecutionProbe(
             lambda: self.assertEqual(
                 cmdCounter + 1,
-                self.deformableMirrorClient1.get_status().command_counter)))
+                self.client1.get_status().command_counter)))
 
     def _testGetSnapshot(self):
-        snapshot = self.deformableMirrorClient1.get_snapshot('aa')
+        snapshot = self.client1.get_snapshot('aa')
         snKey = 'aa.%s' % SnapshotEntry.SERIAL_NUMBER
         self.assertTrue(snKey in snapshot.keys())
 
     def _testServerInfo(self):
-        serverInfo = self.deformableMirrorClient1.serverInfo()
+        serverInfo = self.client1.serverInfo()
         self.assertEqual('ALPAO DM277 Deformable Mirror Server',
                          serverInfo.name)
         self.assertEqual('localhost', serverInfo.hostname)

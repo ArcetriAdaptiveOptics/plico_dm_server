@@ -6,7 +6,9 @@ from six import with_metaclass
 
 class AbstractDeformableMirror(with_metaclass(abc.ABCMeta, object)):
 
-
+    @abc.abstractmethod
+    def isReady(self):
+        assert False
 
     @abc.abstractmethod
     @returns(str)
