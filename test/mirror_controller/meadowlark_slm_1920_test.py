@@ -7,6 +7,7 @@ from plico_dm_server.controller.fake_meadowlark_slm_1920 import \
     FakeInitializeMeadowlarkSDK
 from tempfile import gettempdir
 import os
+from numpy import dtype
 
 
 class MeadowlarkSlm1920Test(unittest.TestCase):
@@ -86,7 +87,7 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
                                   1, 1, 2,
                                   254, 254, 255,
                                   255, 255, 0, 1, 2], dtype=np.uint8)
-        output_data = self._dm._convert2_modulo256(array=input_data, norm=255)
+        output_data = self._dm._convert2_modulo256(array=input_data, norm=256)
 
         self.assertEqual(expected_data.tolist(), output_data.tolist())
 
@@ -96,9 +97,9 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
             one_dimensional_arr1, (2, 5), order='C')
         # No normalization effects
         output_arr1 = self._dm._convert2_modulo256(
-            array=one_dimensional_arr1, norm=255)
+            array=one_dimensional_arr1, norm=256)
         output_arr2 = self._dm._convert2_modulo256(
-            array=two_dimensional_arr2, norm=255)
+            array=two_dimensional_arr2, norm=256)
         output_arr2 = np.reshape(output_arr2, (10), order='C')
         self.assertTrue(np.allclose(output_arr1, output_arr2))
         # Normalized
@@ -162,19 +163,27 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
         self.assertRaises(
             MeadowlarkError,
             self._dm.setZonalCommand,
-            zonalCommand=commandVectorWithWrongShapes)
+            zonalCommand = commandVectorWithWrongShapes)
         # 2D input zonalCommand array with wrong number of rows
         commandVectorWithWrongRows = np.zeros((self.HEIGHT, 2))
         self.assertRaises(
             MeadowlarkError,
             self._dm.setZonalCommand,
-            zonalCommand=commandVectorWithWrongRows)
+            zonalCommand = commandVectorWithWrongRows)
         # 2D input zonalCommand array with wrong number of columns
         commandVectorWithWrongCols = np.zeros((2, self.WIDTH))
         self.assertRaises(
             MeadowlarkError,
             self._dm.setZonalCommand,
-            zonalCommand=commandVectorWithWrongCols)
+            zonalCommand = commandVectorWithWrongCols)
+        
+    def testSetZonalWithWrongDtypeInput(self):
+        uint8_array = np.zeros(self.NUMBER_OF_ACTUATORS, dtype = np.uint8)
+        zonalCommand = uint8_array
+        self.assertRaises(
+            MeadowlarkError,
+            self._dm.setZonalCommand,
+            zonalCommand = uint8_array) 
 
     def testSetAndGetZonalCommand(self):
         zonalCommand = np.arange(self.NUMBER_OF_ACTUATORS)
@@ -211,13 +220,15 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
 
     def testImageWriteAndImageWriteCompleteCorrectSequence(self):
         self.assertFalse(self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE)
-        image2write_on_slm = np.zeros(self.NUMBER_OF_ACTUATORS, dtype=np.uint8)
+        
         # writing a single image on slm
         # calling _write_image
+        image2write_on_slm = np.zeros(self.NUMBER_OF_ACTUATORS, dtype=np.uint8)
         self._dm._write_image(
             image_np=image2write_on_slm)
         self.assertFalse(self._slm_lib.NEED2CALL_WRITEIMAGECOMPLETE)
         # calling _ write_image_from_wavefront
+        image2write_on_slm = np.zeros(self.NUMBER_OF_ACTUATORS)
         self._dm._write_image_from_wavefront(
             wavefront=image2write_on_slm,
             add_correction=False)
@@ -250,7 +261,46 @@ class MeadowlarkSlm1920Test(unittest.TestCase):
             add_correction=True)
         expectedImage = image2WriteOnSlm + wavefrontCorrection
         self.assertTrue(np.allclose(expectedImage, outputImage))
-
-
+    
+    def testSetGetZonalCommandWithMaskedArray(self):
+        mask = np.ones(1152*1920)
+        mask[0:50] = 0
+        input_ma = np.ma.array(np.zeros(1152*1920), mask=mask)
+        self._dm.setZonalCommand(input_ma)
+        output_ma = self._dm.getZonalCommand()
+        self.assertTrue(np.all(input_ma == output_ma))
+        self.assertTrue(np.all(input_ma.mask == output_ma.mask))
+        self.assertTrue(np.all(input_ma.data == output_ma.data))
+    
+    def testOutputFillValueWithsetZonalCommand(self):
+        input_ma = np.ma.zeros((1152,1920))
+        input_ma.fill_value = 0
+        self._dm.setZonalCommand(input_ma)
+        self.assertTrue(self._dm._applied_command.fill_value == 0)
+        self.assertTrue(self._dm.getZonalCommand().fill_value == 0)
+        
+        mask = np.ones(1152*1920)
+        mask[0:50] = 0
+        piston = 400e-9*np.ma.array(np.ones(1152*1920),mask=mask)
+        fill_value_meters = piston.fill_value
+        self._dm.setZonalCommand(piston)
+        self.assertTrue(fill_value_meters==self._dm.getZonalCommand().fill_value)
+        
+    def testFillValueVariationDueModuloOperation(self):
+        mask = np.ones(1152*1920)
+        mask[0:50] = 0
+        piston = 400e-9*np.ma.array(np.ones(1152*1920),mask=mask)
+        fill_value_meters = piston.fill_value
+        
+        self._dm.setZonalCommand(piston)
+        applied_command_bmp = self._dm._applied_command
+        fill_value_uint8 = applied_command_bmp.fill_value
+        
+        self.assertTrue(fill_value_meters!=fill_value_uint8)
+       
+        
+    
+        
+        
 if __name__ == "__main__":
     unittest.main()

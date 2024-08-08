@@ -10,6 +10,7 @@ from numpy import dtype
 from PIL import Image
 
 
+
 class MeadowlarkError(Exception):
     """Exception raised for Meadowlark Optics SDK error.
 
@@ -193,6 +194,8 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
         self._OutputPulseImageRefresh = c_uint(0)
 
         self._read_parameters_and_write_zero_image()
+        self._wl_calib_reset = None
+        self._wfc_reset = None
 
     def _read_parameters_and_write_zero_image(self):
         self._logger.notice("Reading SLM height")
@@ -335,7 +338,7 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
         if norm is None:
             norm = self._wl_calibration
 
-        data = array * 255 / norm
+        data = array * 256 / norm
         data = np.round(data)
         return data.astype(np.uint8)
 
@@ -364,6 +367,7 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
             correction File (WFC). Otherwise, the WFC corresponds to null vector:
             thus no correction is applied. Default value is set to True. 
         '''
+        
         inputVectorShape = len(zonalCommand.shape)
 
         if inputVectorShape == 1:
@@ -381,7 +385,10 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
         if inputVectorShape != 1 and inputVectorShape != 2:
             raise MeadowlarkError(
                 "zonalCommand must be a 1- or 2-D numpy array!")
-
+        if zonalCommand.dtype == np.uint8 : 
+            raise MeadowlarkError(
+                "zonalCommand must be defined in units of meters!")
+        
         self._zonal_command = zonalCommand
         self._applied_command = self._write_image_from_wavefront(
             self._zonal_command, add_correction)
@@ -541,7 +548,7 @@ class MeadowlarkSlm1920(AbstractDeformableMirror):
         '''
         self._logger.notice('Deleting SLM SDK')
         self._slm_lib.Delete_SDK()
-
+        
     # ImageGen function for Holograms Not implemented
     #
     # def InitializeHologramGenerator(self, iterations = 1):
