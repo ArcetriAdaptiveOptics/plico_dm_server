@@ -69,6 +69,7 @@ class Runner(BaseRunner):
         libFolder = self.configuration.getValue(mirrorDeviceSection,
                                                 'lib_folder')
         sys.path.append(libFolder)
+        sys.path.append(os.path.dirname(libFolder))
         from asdk import DM
         alpaoDm = DM(serialNumber)
         self._mirror = AlpaoDeformableMirror(alpaoDm, serialNumber)
