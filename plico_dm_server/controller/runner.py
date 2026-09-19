@@ -15,6 +15,8 @@ from plico_dm_server.controller.alpao_deformable_mirror import \
     AlpaoDeformableMirror
 from plico_dm_server.controller.deformable_mirror_controller import \
     DeformableMirrorController
+from plico_dm_server.controller.modulator_controller import \
+    ModulatorController
 from plico_dm_server.controller.meadowlark_slm_1920 import MeadowlarkSlm1920,\
     initialize_meadowlark_sdk
 
@@ -22,9 +24,11 @@ from plico_dm_server.controller.meadowlark_slm_1920 import MeadowlarkSlm1920,\
 class Runner(BaseRunner):
 
     RUNNING_MESSAGE = "Mirror controller is running."
+    MODULATOR_RUNNING_MESSAGE = "Modulator controller is running."
 
     def __init__(self):
         BaseRunner.__init__(self)
+        self._isModulator = False
 
     def _tryGetDefaultFlatTag(self):
         try:
@@ -35,6 +39,13 @@ class Runner(BaseRunner):
         except KeyError as e:
             self._logger.warn(str(e))
             return None
+
+    def _sectionHasKey(self, key):
+        try:
+            self.configuration.getValue(self.getConfigurationSection(), key)
+            return True
+        except KeyError:
+            return False
 
     def _createDeformableMirrorDevice(self):
         mirrorDeviceSection = self.configuration.getValue(
@@ -56,6 +67,45 @@ class Runner(BaseRunner):
             self._createSPLATTMirror(mirrorDeviceSection)
         else:
             raise KeyError('Unsupported mirror model %s' % mirrorModel)
+
+    def _createModulatorDevice(self):
+        modulatorDeviceSection = self.configuration.getValue(
+            self.getConfigurationSection(), 'modulator')
+        modulatorModel = self.configuration.deviceModel(modulatorDeviceSection)
+        if modulatorModel == 'simulatedModulator':
+            self._createSimulatedModulator(modulatorDeviceSection)
+        elif modulatorModel == 'piS334Modulator':
+            self._createPIS334Modulator(modulatorDeviceSection)
+        else:
+            raise KeyError('Unsupported modulator model %s' % modulatorModel)
+
+    def _createSimulatedModulator(self, modulatorDeviceSection):
+        from plico_dm_server.controller.simulated_modulator import \
+            SimulatedModulator
+        name = self.configuration.deviceName(modulatorDeviceSection)
+        self._logger.notice("Creating simulated modulator %s" % name)
+        self._modulator = SimulatedModulator(name)
+
+    def _createPIS334Modulator(self, modulatorDeviceSection):
+        from plico_dm_server.controller.pi_S334_modulator import PIS334Modulator
+        from pi_gcs.gcs2 import GeneralCommandSet2
+        from pi_gcs.tip_tilt_2_axes import TipTilt2Axis
+
+        name = self.configuration.deviceName(modulatorDeviceSection)
+        hostname = self.configuration.getValue(
+            modulatorDeviceSection, 'ip_address')
+        serialNumber = self.configuration.getValue(
+            modulatorDeviceSection, 'serial_number')
+        self._logger.notice(
+            "Creating PI S334 modulator %s SN %s @ %s" % (
+                name, serialNumber, hostname))
+        cfg = self._calibrationManager.loadPiTipTiltCalibration(serialNumber)
+        cfg.hostname = hostname
+        gcs = GeneralCommandSet2()
+        tt = TipTilt2Axis(gcs, cfg)
+        tt.setUp()
+        self._modulator = PIS334Modulator(
+            "%s-%s" % (name, serialNumber), tt)
 
     def _createSimulatedDeformableMirror(self, mirrorDeviceSection):
         dmSerialNumber = self.configuration.getValue(
@@ -142,6 +192,13 @@ class Runner(BaseRunner):
         calibrationRootDir = self.configuration.calibrationRootDir()
         self._calibrationManager = CalibrationManager(calibrationRootDir)
 
+    def _logRunning(self):
+        if self._isModulator:
+            self._logger.notice(self.MODULATOR_RUNNING_MESSAGE)
+        else:
+            self._logger.notice(self.RUNNING_MESSAGE)
+        sys.stdout.flush()
+
     @logFailureAndRaise
     def _setUp(self):
         self._logger = Logger.of("Deformable Mirror Controller runner")
@@ -160,21 +217,35 @@ class Runner(BaseRunner):
 
         self._createCalibrationManager()
 
-        self._createDeformableMirrorDevice()
-
-        flatFileTag = self._tryGetDefaultFlatTag()
-
-        self._logger.notice("Creating DeformableMirrorController")
-        self._controller = DeformableMirrorController(
-            self.name,
-            self._zmqPorts,
-            self._mirror,
-            self._replySocket,
-            self._statusSocket,
-            self.rpc(),
-            self._calibrationManager,
-            flatFileTag)
-        self._configureDiscoveryServer('plico_dm', self._mirror.__class__.__name__)
+        if self._sectionHasKey('modulator'):
+            self._isModulator = True
+            self._createModulatorDevice()
+            self._logger.notice("Creating ModulatorController")
+            self._controller = ModulatorController(
+                self.name,
+                self._zmqPorts,
+                self._modulator,
+                self._replySocket,
+                self._statusSocket,
+                self.rpc())
+            self._configureDiscoveryServer(
+                'plico_dm', self._modulator.__class__.__name__)
+        else:
+            self._isModulator = False
+            self._createDeformableMirrorDevice()
+            flatFileTag = self._tryGetDefaultFlatTag()
+            self._logger.notice("Creating DeformableMirrorController")
+            self._controller = DeformableMirrorController(
+                self.name,
+                self._zmqPorts,
+                self._mirror,
+                self._replySocket,
+                self._statusSocket,
+                self.rpc(),
+                self._calibrationManager,
+                flatFileTag)
+            self._configureDiscoveryServer(
+                'plico_dm', self._mirror.__class__.__name__)
 
     def _runLoop(self):
         self._logRunning()
@@ -188,12 +259,6 @@ class Runner(BaseRunner):
 
     @override
     def run(self):
-        # try:
-        #     self._setUp()
-        # except Exception as e:
-        #     #traceback.print_exc()
-        #     self._logger.error(str(e))
-        #     raise(e)
         self._setUp()
         self._runLoop()
         return os.EX_OK

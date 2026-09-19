@@ -15,7 +15,7 @@ class AbstractModulator(object):
         assert False
 
     @abc.abstractmethod
-    def setFrequencyInHz(self):
+    def setFrequencyInHz(self, frequencyInHz):
         assert False
 
     @abc.abstractmethod
