@@ -51,15 +51,21 @@ class Runner(BaseRunner):
         mirrorDeviceSection = self.configuration.getValue(
             self.getConfigurationSection(), 'mirror')
         mirrorModel = self.configuration.deviceModel(mirrorDeviceSection)
-        if mirrorModel == 'simulatedMEMSMultiDM':
+        if mirrorModel == 'simulatedDM':
             self._createSimulatedDeformableMirror(mirrorDeviceSection)
-        elif mirrorModel == 'simulatedDM':
-            self._createSimulatedDeformableMirror(mirrorDeviceSection)
+        elif mirrorModel in (
+                'simulatedMEMSMultiDM', 'simulatedMEMS140',
+                'simulatedBmcMultiDM'):
+            # BMC Multi-DM 5.5 µm class: 140 actuators (Drop 2 laptop path)
+            self._createSimulatedDeformableMirror(
+                mirrorDeviceSection,
+                nActuators=SimulatedDeformableMirror.BMC_MULTI_DM_ACTUATORS)
         elif mirrorModel == 'alpaoDM':
             self._createAlpaoMirror(mirrorDeviceSection)
         elif mirrorModel == 'piTipTilt':
             self._createPITipTiltMirror(mirrorDeviceSection)
-        elif mirrorModel == 'bmc':
+        elif mirrorModel in ('bmc', 'bmcMultiDM'):
+            # bmcMultiDM is the historical conf alias for the BMC USB path
             self._createBmcDeformableMirror(mirrorDeviceSection)
         elif mirrorModel == 'meadowlarkSLM':
             self._createMeadowlarkSlm(mirrorDeviceSection)
@@ -107,10 +113,24 @@ class Runner(BaseRunner):
         self._modulator = PIS334Modulator(
             "%s-%s" % (name, serialNumber), tt)
 
-    def _createSimulatedDeformableMirror(self, mirrorDeviceSection):
+    def _createSimulatedDeformableMirror(self, mirrorDeviceSection,
+                                         nActuators=None):
         dmSerialNumber = self.configuration.getValue(
             mirrorDeviceSection, 'serial_number')
-        self._mirror = SimulatedDeformableMirror(dmSerialNumber)
+        # Optional conf override: n_actuators= 140
+        if nActuators is None:
+            try:
+                nActuators = int(self.configuration.getValue(
+                    mirrorDeviceSection, 'n_actuators'))
+            except KeyError:
+                nActuators = None
+        self._logger.notice(
+            "Creating simulated DM SN %s (%s actuators)" % (
+                dmSerialNumber,
+                nActuators if nActuators is not None
+                else SimulatedDeformableMirror.NUMBER_OF_ACTUATORS))
+        self._mirror = SimulatedDeformableMirror(
+            dmSerialNumber, nActuators=nActuators)
 
     def _createAlpaoMirror(self, mirrorDeviceSection):
         serialNumber = str(self.configuration.getValue(mirrorDeviceSection,

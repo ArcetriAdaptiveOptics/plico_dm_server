@@ -143,10 +143,26 @@ class DeformableMirrorController(Stepable, Snapshotable, Hackerable,
             tag, self._mirror.getZonalCommand())
 
     def load_reference(self, flat_tag):
+        n = self._getNumberOfActuators()
         if flat_tag is not None:
-            self._flatCmd = self._calMgr.loadZonalCommand(flat_tag)
+            try:
+                loaded = np.asarray(
+                    self._calMgr.loadZonalCommand(flat_tag), dtype=float).ravel()
+            except Exception as e:
+                self._logger.warn(
+                    'Could not load flat tag %s (%s); using zeros' % (
+                        flat_tag, e))
+                loaded = None
+            if loaded is not None and loaded.size == n:
+                self._flatCmd = loaded
+            else:
+                if loaded is not None:
+                    self._logger.warn(
+                        'Flat tag %s has %d acts, mirror has %d; using zeros' % (
+                            flat_tag, loaded.size, n))
+                self._flatCmd = np.zeros(n)
         else:
-            self._flatCmd = np.zeros(self._getNumberOfActuators())
+            self._flatCmd = np.zeros(n)
         self._flatTag = flat_tag
 
     def get_reference_shape(self):
